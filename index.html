@@ -2008,28 +2008,6 @@
         }
     }
 
-    // ========== CALENDAR DAY NAV ==========
-    function initCalendarNav() {
-        const sections = document.querySelectorAll('.day');
-        const navLinks = document.querySelectorAll('.day-nav a');
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const id = entry.target.getAttribute('id');
-                    navLinks.forEach(link => {
-                        link.classList.remove('active');
-                        if (link.getAttribute('href') === `#${id}`) {
-                            link.classList.add('active');
-                        }
-                    });
-                }
-            });
-        }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
-
-        sections.forEach(section => observer.observe(section));
-    }
-
     // ========== INIT ==========
     document.addEventListener('DOMContentLoaded', () => {
         window.router = new Router();
@@ -2045,8 +2023,6 @@
             window.calendarRenderer.data = e.detail;
             window.calendarRenderer.render();
         });
-
-        initCalendarNav();
     });
     </script>
 </body>
