@@ -8,7 +8,25 @@
       "Skill(superpowers:subagent-driven-development)",
       "Bash(npm install:*)",
       "Bash(node -e:*)",
-      "Bash(node -c:*)"
+      "Bash(node -c:*)",
+      "Bash(npm start)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(PORT=3000 npm start)",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:executing-plans)",
+      "Bash(timeout /t 2 /nobreak)",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "Skill(superpowers:finishing-a-development-branch)",
+      "Bash(git rev-parse:*)",
+      "Skill(superpowers:using-git-worktrees)",
+      "Bash(node test-parser.js:*)",
+      "Bash(ls:*)"
     ]
   }
 }
