@@ -1645,6 +1645,7 @@
                 e.preventDefault();
                 this.sendMessage(this.inputEl.value);
             });
+            document.getElementById('clear-chat-btn').addEventListener('click', () => this.clearHistory());
         }
 
         async sendMessage(message) {
@@ -1796,6 +1797,24 @@
                 top: this.messagesEl.scrollHeight,
                 behavior: 'smooth'
             });
+        }
+
+        async clearHistory() {
+            try {
+                await fetch('/api/chat/clear', { method: 'POST' });
+
+                // Clear UI messages except welcome
+                this.messagesEl.innerHTML = `
+                    <div class="chat-message-full assistant">
+                        <div class="chat-message-content-full">Woof! I'm Oscar, your loyal NYC trip companion. Ask me anything about your Jan 14-18 adventure - I've got the whole itinerary memorized! 🐾</div>
+                    </div>
+                `;
+
+                showToast('Chat cleared - fresh start!');
+            } catch (err) {
+                console.error('Failed to clear chat:', err);
+                showToast('Failed to clear chat', 'error');
+            }
         }
     }
 
