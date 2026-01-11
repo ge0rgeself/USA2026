@@ -313,10 +313,10 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
     itineraryTxt = regenerateItineraryTxt(itineraryJson);
     await writeItinerary(itineraryTxt);
 
-    // Re-enrich if description changed
+    // Re-enrich if description changed (incremental - only the changed item)
     if (descriptionChanged) {
       const parsed = parseItinerary(itineraryTxt);
-      itineraryJson = await enrichItinerary(parsed, genAI);
+      itineraryJson = await enrichItinerary(parsed, genAI, itineraryJson);
     }
     writeItineraryJson(itineraryJson);
 
@@ -370,9 +370,9 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
     itineraryTxt = regenerateItineraryTxt(itineraryJson);
     await writeItinerary(itineraryTxt);
 
-    // Enrich the new item
+    // Enrich the new item (incremental - only the new item)
     const parsed = parseItinerary(itineraryTxt);
-    itineraryJson = await enrichItinerary(parsed, genAI);
+    itineraryJson = await enrichItinerary(parsed, genAI, itineraryJson);
     writeItineraryJson(itineraryJson);
 
     res.json({ success: true, json: itineraryJson });
@@ -489,12 +489,12 @@ Make the minimal change needed. Do not add explanations.`;
 
     const newTxt = response.content[0].text.trim();
 
-    // Save and enrich
+    // Save and enrich (incremental - only changed items)
     await writeItinerary(newTxt);
     itineraryTxt = newTxt;
 
     const parsed = parseItinerary(newTxt);
-    itineraryJson = await enrichItinerary(parsed, genAI);
+    itineraryJson = await enrichItinerary(parsed, genAI, itineraryJson);
     writeItineraryJson(itineraryJson);
 
     res.json({
