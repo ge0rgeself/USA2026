@@ -99,10 +99,11 @@ const genAI = process.env.GOOGLE_GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
   : null;
 
-// Import parser, enricher, and storage
+// Import parser, enricher, storage, and research
 const { parseItinerary } = require('./lib/parser');
 const { enrichItinerary } = require('./lib/enricher');
 const { readItinerary, writeItinerary, writeItineraryJson } = require('./lib/storage');
+const { needsPlaceResearch, researchPlaces, formatResearchForChat } = require('./lib/gemini-research');
 
 // Load itinerary files
 let itineraryTxt = '';
@@ -196,6 +197,14 @@ PERSONALITY:
 - Keep it light - don't overdo the dog puns (1-2 per response max)
 - You're smart and capable, not cutesy-dumb
 
+YOUR RESEARCH CAPABILITIES:
+- When you receive [GROUNDED RESEARCH] data, this is REAL-TIME info from Google Maps
+- Trust this data - it contains accurate addresses, hours, ratings, and reviews
+- Use specific details from research: exact addresses, current hours, price ranges
+- Cite ratings and reviews when relevant ("4.7 stars with 2,000+ reviews!")
+- When research includes multiple options, present the best 2-3 with clear comparisons
+- Always include the Maps URL when recommending a place
+
 HOW THIS APP WORKS:
 - The itinerary lives in itinerary.txt which you can see below
 - When updated, it auto-parses into a calendar view and gets enriched with addresses/tips
@@ -237,10 +246,12 @@ Examples of update-worthy requests:
 - "Let's do X" → offer update
 
 GENERAL GUIDELINES:
-- Keep responses concise (2-4 sentences usually)
-- Include Google Maps links for locations: https://maps.google.com/maps?q=PLACE+NAME+NYC
+- Keep responses concise but informative (3-5 sentences for recommendations)
+- Use specific data from research when available (addresses, hours, ratings)
+- Include Google Maps links for locations
 - You know NYC well - make recommendations when asked!
-- January is cold (30-40°F) - mention layers when relevant`;
+- January is cold (30-40°F) - mention layers when relevant
+- When comparing options, use a clear format with key differentiators`;
 }
 
 // Itinerary API endpoints
@@ -423,6 +434,20 @@ app.post('/api/chat', requireAuth, async (req, res) => {
       req.session.chatHistory = [];
     }
 
+    // Check if message needs place research (uses Gemini with Maps grounding)
+    let researchContext = '';
+    if (genAI && needsPlaceResearch(message)) {
+      console.log('Performing grounded research for:', message.substring(0, 50) + '...');
+      const research = await researchPlaces(message, genAI, {
+        currentItinerary: itineraryTxt,
+        location: { lat: 40.7128, lng: -74.0060 } // NYC coordinates
+      });
+      if (research.success) {
+        researchContext = formatResearchForChat(research);
+        console.log('Research completed, found', research.places?.length || 0, 'places');
+      }
+    }
+
     // Add user message to history
     req.session.chatHistory.push({ role: 'user', content: message });
 
@@ -431,19 +456,33 @@ app.post('/api/chat', requireAuth, async (req, res) => {
       req.session.chatHistory = req.session.chatHistory.slice(-20);
     }
 
+    // Build messages with research context if available
+    let messagesForClaude = [...req.session.chatHistory];
+    if (researchContext) {
+      // Inject research as a system-style context before the user's message
+      const lastUserIdx = messagesForClaude.length - 1;
+      messagesForClaude[lastUserIdx] = {
+        role: 'user',
+        content: `[GROUNDED RESEARCH - Use this accurate, real-time data from Google Maps to inform your response]\n\n${researchContext}\n\n[USER'S QUESTION]\n${message}`
+      };
+    }
+
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
+      max_tokens: 700,
       system: getSystemPrompt(),
-      messages: req.session.chatHistory
+      messages: messagesForClaude
     });
 
     const assistantMessage = response.content[0].text;
 
-    // Add assistant response to history
+    // Add assistant response to history (without the research context injection)
     req.session.chatHistory.push({ role: 'assistant', content: assistantMessage });
 
-    res.json({ response: assistantMessage });
+    res.json({
+      response: assistantMessage,
+      researchPerformed: !!researchContext
+    });
   } catch (err) {
     console.error('Chat error:', err);
 
