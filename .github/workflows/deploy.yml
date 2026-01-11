@@ -19,3 +19,8 @@ jobs:
           service: nyc-trip
           region: us-central1
           source: .
+          secrets: |
+            ANTHROPIC_API_KEY=anthropic-api-key:latest
+            GOOGLE_CLIENT_ID=google-client-id:latest
+            GOOGLE_CLIENT_SECRET=google-client-secret:latest
+            GOOGLE_GEMINI_API_KEY=google-gemini-api-key:latest
