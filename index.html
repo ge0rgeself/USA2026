@@ -1673,6 +1673,9 @@
             this.expandedEvent = null;
             this.editingEvent = null;
             this.editState = null;
+            this.isEditMode = false;
+            this.pendingChanges = { added: [], modified: {}, deleted: [] };
+            this.isSaving = false;
             // Bind outside click handler once to prevent memory leak
             this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
             this.initPillHandlers();
@@ -1715,6 +1718,23 @@
                 this.render();
                 this.container.classList.remove('transitioning');
             }, 150);
+        }
+
+        toggleEditMode() {
+            if (this.isEditMode) {
+                // Exiting edit mode - discard changes
+                this.isEditMode = false;
+                this.pendingChanges = { added: [], modified: {}, deleted: [] };
+                this.editingEvent = null;
+                this.editState = null;
+                this.expandedEvent = null;
+            } else {
+                // Entering edit mode
+                this.isEditMode = true;
+                this.expandedEvent = null;
+                this.editingEvent = null;
+            }
+            this.render();
         }
 
         render() {
@@ -1858,6 +1878,28 @@
                     this.addNewEvent(time);
                 });
             });
+
+            // Edit mode button handlers
+            const editBtn = document.getElementById('cal-edit-btn');
+            const doneBtn = document.getElementById('cal-done-btn');
+
+            editBtn.addEventListener('click', () => {
+                this.toggleEditMode();
+            });
+
+            if (this.isEditMode && doneBtn) {
+                doneBtn.classList.add('visible');
+                doneBtn.disabled = this.isSaving;
+                doneBtn.addEventListener('click', () => {
+                    this.saveAllChanges();
+                });
+            } else if (doneBtn) {
+                doneBtn.classList.remove('visible');
+            }
+
+            // Update edit button state
+            editBtn.classList.toggle('active', this.isEditMode);
+            editBtn.textContent = this.isEditMode ? 'Exit' : 'Edit';
 
             // Click outside to save
             document.removeEventListener('click', this.boundHandleOutsideClick);
