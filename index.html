@@ -1481,6 +1481,34 @@
             from { opacity: 0; transform: translateX(20px); }
             to { opacity: 1; transform: translateX(0); }
         }
+
+        /* ========== CHAT ACTION BUTTONS ========== */
+        .chat-action-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--timeline-line);
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .chat-action-btn:hover {
+            background: var(--bg-main);
+            border-color: var(--accent-dim);
+        }
+
+        .chat-action-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-deep);
+        }
+
+        .chat-action-btn.primary:hover {
+            background: var(--accent-light);
+        }
     </style>
 </head>
 <body>
@@ -1913,13 +1941,78 @@
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'chat-message-content-full';
-            contentDiv.innerHTML = this.linkify(content);
+
+            // Check for update available marker
+            if (role === 'assistant' && content.includes('[UPDATE_AVAILABLE]')) {
+                const cleanContent = content.replace('[UPDATE_AVAILABLE]', '').trim();
+                contentDiv.innerHTML = this.linkify(cleanContent);
+
+                // Add action buttons
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'chat-actions';
+                actionsDiv.style.cssText = 'margin-top: 12px; display: flex; gap: 8px;';
+
+                const updateBtn = document.createElement('button');
+                updateBtn.textContent = 'Update itinerary';
+                updateBtn.className = 'chat-action-btn primary';
+                updateBtn.onclick = () => this.confirmUpdate(cleanContent);
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = 'No thanks';
+                cancelBtn.className = 'chat-action-btn';
+                cancelBtn.onclick = () => {
+                    actionsDiv.remove();
+                    this.addMessage("No problem! Let me know if you change your mind.", 'assistant');
+                };
+
+                actionsDiv.appendChild(updateBtn);
+                actionsDiv.appendChild(cancelBtn);
+                contentDiv.appendChild(actionsDiv);
+            } else {
+                contentDiv.innerHTML = this.linkify(content);
+            }
 
             messageDiv.appendChild(contentDiv);
             this.messagesEl.appendChild(messageDiv);
             this.scrollToBottom();
 
             return messageDiv;
+        }
+
+        async confirmUpdate(context) {
+            this.showTyping();
+
+            try {
+                const response = await fetch('/api/itinerary/chat-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update based on conversation',
+                        newContent: context
+                    })
+                });
+
+                const data = await response.json();
+                this.hideTyping();
+
+                if (data.success) {
+                    // Update calendar and editor
+                    window.dispatchEvent(new CustomEvent('itinerary-updated', { detail: data.json }));
+                    if (window.markdownEditor) {
+                        window.markdownEditor.textarea.value = data.txt;
+                        window.markdownEditor.originalContent = data.txt;
+                        window.markdownEditor.hasChanges = false;
+                        window.markdownEditor.updateStatus();
+                    }
+
+                    this.addMessage("Done! I've updated the itinerary. You can see the changes in the Calendar and Editor.", 'assistant');
+                } else {
+                    this.addMessage("Sorry, I couldn't update the itinerary. Please try again.", 'assistant');
+                }
+            } catch (err) {
+                this.hideTyping();
+                this.addMessage("Connection error. Please try again.", 'assistant');
+            }
         }
 
         showTyping() {
