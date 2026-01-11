@@ -401,6 +401,23 @@
             text-overflow: ellipsis;
         }
 
+        .event-hook {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-style: italic;
+            flex-shrink: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+
+        @media (max-width: 600px) {
+            .event-hook {
+                display: none;
+            }
+        }
+
         .event-badge {
             font-size: 9px;
             text-transform: uppercase;
