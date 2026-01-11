@@ -1831,12 +1831,16 @@
                 const timeInput = form.querySelector('[data-field="time"]');
                 if (timeInput) {
                     timeInput.addEventListener('blur', () => {
-                        this.saveEdit(index);
+                        if (!this.isEditMode) {
+                            this.saveEdit(index);
+                        }
                     });
                     timeInput.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
                             e.preventDefault();
-                            this.saveEdit(index);
+                            if (!this.isEditMode) {
+                                this.saveEdit(index);
+                            }
                         }
                         if (e.key === 'Escape') {
                             e.preventDefault();
@@ -1849,12 +1853,16 @@
                 const input = form.querySelector('[data-field="description"]');
                 if (input) {
                     input.addEventListener('blur', () => {
-                        this.saveEdit(index);
+                        if (!this.isEditMode) {
+                            this.saveEdit(index);
+                        }
                     });
                     input.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
                             e.preventDefault();
-                            this.saveEdit(index);
+                            if (!this.isEditMode) {
+                                this.saveEdit(index);
+                            }
                         }
                         if (e.key === 'Escape') {
                             e.preventDefault();
@@ -2268,6 +2276,94 @@
             }
         }
 
+        async saveAllChanges() {
+            if (this.isSaving) return;
+
+            this.isSaving = true;
+            const doneBtn = document.getElementById('cal-done-btn');
+            if (doneBtn) doneBtn.disabled = true;
+
+            this.showSaveIndicator('Saving changes...');
+
+            try {
+                const dayData = this.data.days[this.selectedDay - 1];
+                const errors = [];
+
+                // Save all modifications and new items
+                for (let index = 0; index < dayData.items.length; index++) {
+                    const item = dayData.items[index];
+                    const form = this.container.querySelector(`[data-event="${index}"] .event-edit-form`);
+
+                    if (!form) continue;
+
+                    const input = form.querySelector('[data-field="description"]');
+                    const timeInput = form.querySelector('[data-field="time"]');
+                    const description = input?.value?.trim();
+
+                    // Skip if empty and not newly added
+                    if (!description && !item.isNew) continue;
+
+                    const updatedItem = {
+                        time: timeInput?.value?.trim() || 'morning',
+                        description: description || '',
+                        fallback: form.querySelector('[data-field="fallback"]')?.classList.contains('active') || false,
+                        optional: form.querySelector('[data-field="optional"]')?.classList.contains('active') || false
+                    };
+
+                    try {
+                        const isNew = item.isNew;
+                        const endpoint = '/api/itinerary/item';
+                        const method = isNew ? 'POST' : 'PATCH';
+                        const body = isNew
+                            ? { day: this.selectedDay - 1, item: updatedItem }
+                            : { day: this.selectedDay - 1, index: index, item: updatedItem };
+
+                        const response = await fetch(endpoint, {
+                            method: method,
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
+                        });
+
+                        if (!response.ok) {
+                            errors.push(`Failed to save event at index ${index}`);
+                        }
+                    } catch (err) {
+                        errors.push(`Error saving event: ${err.message}`);
+                    }
+                }
+
+                // If there were no major errors, re-fetch the full itinerary
+                if (errors.length === 0) {
+                    const response = await fetch('/api/itinerary');
+                    const { json } = await response.json();
+                    this.data = json;
+                    this.showSaveIndicator('Saved ✓', true);
+                } else {
+                    showToast(errors[0], 'error');
+                    this.showSaveIndicator('Some changes failed', false);
+                }
+            } catch (err) {
+                console.error('Save error:', err);
+                showToast('Failed to save changes', 'error');
+                this.showSaveIndicator('Save failed', false);
+            } finally {
+                // Exit edit mode and re-render
+                this.isSaving = false;
+                this.isEditMode = false;
+                this.pendingChanges = { added: [], modified: {}, deleted: [] };
+                this.editingEvent = null;
+                this.editState = null;
+
+                const doneBtn = document.getElementById('cal-done-btn');
+                if (doneBtn) {
+                    doneBtn.disabled = false;
+                    doneBtn.classList.remove('visible');
+                }
+
+                this.render();
+            }
+        }
+
         markEventModified(index) {
             const dayData = this.data.days[this.selectedDay - 1];
             const item = dayData.items[index];
@@ -2277,6 +2373,8 @@
         }
 
         async saveEdit(index) {
+            // In edit mode, changes are saved via saveAllChanges
+            if (this.isEditMode) return;
             if (this.editingEvent === null) return;
 
             const form = this.container.querySelector('.event-edit-form');
