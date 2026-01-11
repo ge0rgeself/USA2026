@@ -93,6 +93,12 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const client = new Anthropic();
 
+// Gemini client for Maps grounding enrichment
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const genAI = process.env.GOOGLE_GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
+  : null;
+
 // Itinerary loaded dynamically so it can be reloaded after edits
 let itinerary = fs.readFileSync('./nyc_itinerary.md', 'utf-8');
 
