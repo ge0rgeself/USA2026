@@ -401,6 +401,23 @@
             text-overflow: ellipsis;
         }
 
+        .event-hook {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-style: italic;
+            flex-shrink: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+
+        @media (max-width: 600px) {
+            .event-hook {
+                display: none;
+            }
+        }
+
         .event-badge {
             font-size: 9px;
             text-transform: uppercase;
@@ -442,19 +459,81 @@
         }
 
         .event-address {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
+            font-size: 12px;
+            color: var(--accent-dim);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--timeline-line);
         }
 
         .event-address a {
-            color: var(--text-secondary);
+            color: var(--accent-dim);
             text-decoration: none;
         }
 
         .event-address a:hover {
             color: var(--text-primary);
             text-decoration: underline;
+        }
+
+        .event-description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .event-tips {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: var(--bg-elevated);
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .tips-icon {
+            flex-shrink: 0;
+        }
+
+        .event-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-sep {
+            color: var(--timeline-line);
+        }
+
+        .event-waypoints {
+            margin-bottom: 12px;
+        }
+
+        .waypoint {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 6px 0;
+            border-bottom: 1px solid var(--timeline-line);
+        }
+
+        .waypoint:last-child {
+            border-bottom: none;
+        }
+
+        .event-route-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .event-actions {
@@ -1860,12 +1939,15 @@
                 item.optional ? 'optional' : ''
             ].filter(Boolean).join(' ');
 
+            const hook = place?.hook || '';
+
             return `
             <div class="${rowClasses}" data-event="${index}">
                 <div class="event-row-collapsed">
                     <span class="event-type-dot ${typeClass}"></span>
                     <span class="event-time">${this.formatTime(item.time) || ''}</span>
                     <span class="event-name">${this.escapeHtml(name)}</span>
+                    ${hook ? `<span class="event-hook">${this.escapeHtml(hook)}</span>` : ''}
                     ${badgeHtml}
                     ${neighborhood ? `<span class="event-neighborhood">${neighborhood}</span>` : ''}
                     <svg class="event-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1873,13 +1955,43 @@
                     </svg>
                 </div>
                 <div class="event-row-expanded">
-                    ${place?.address ? `
-                        <div class="event-address">
-                            <a href="${this.escapeHtml(place.mapsUrl)}" target="_blank">${this.escapeHtml(place.address)}</a>
+                    ${place?.description ? `
+                        <div class="event-description">${this.escapeHtml(place.description)}</div>
+                    ` : ''}
+                    ${place?.tips ? `
+                        <div class="event-tips">
+                            <span class="tips-icon">&#128161;</span>
+                            ${this.escapeHtml(place.tips)}
                         </div>
                     ` : ''}
+                    ${(place?.hours || place?.price) ? `
+                        <div class="event-meta">
+                            ${place.hours ? `<span class="event-hours">${this.escapeHtml(place.hours)}</span>` : ''}
+                            ${place.hours && place.price ? '<span class="meta-sep">&#183;</span>' : ''}
+                            ${place.price ? `<span class="event-price">${this.escapeHtml(place.price)}</span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${place?.waypoints && place.waypoints.length > 0 ? `
+                        <div class="event-waypoints">
+                            ${place.waypoints.map(wp => `<div class="waypoint">&#8594; ${this.escapeHtml(wp)}</div>`).join('')}
+                        </div>
+                        ${place.distance || place.duration ? `
+                            <div class="event-route-meta">
+                                ${place.duration ? `<span>${this.escapeHtml(place.duration)}</span>` : ''}
+                                ${place.duration && place.distance ? '<span class="meta-sep">&#183;</span>' : ''}
+                                ${place.distance ? `<span>${this.escapeHtml(place.distance)}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    ` : ''}
                     <div class="event-actions">
-                        ${place?.address ? `
+                        ${place?.routeUrl ? `
+                            <a class="event-action-btn" href="${this.escapeHtml(place.routeUrl)}" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                </svg>
+                                View Route
+                            </a>
+                        ` : place?.address ? `
                             <a class="event-action-btn" href="https://maps.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place.address)}&travelmode=walking" target="_blank">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
@@ -1899,7 +2011,11 @@
                             </a>
                         ` : ''}
                     </div>
-                    ${place?.tips ? `<div class="event-tips">${this.escapeHtml(place.tips)}</div>` : ''}
+                    ${place?.address && !place?.isWalkingRoute ? `
+                        <div class="event-address">
+                            <a href="${this.escapeHtml(place.mapsUrl)}" target="_blank">${this.escapeHtml(place.address)}</a>
+                        </div>
+                    ` : ''}
                 </div>
             </div>`;
         }
