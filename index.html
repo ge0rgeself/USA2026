@@ -1933,12 +1933,10 @@
                 <div class="event-edit-form">
                     <div class="event-edit-row">
                         <span class="event-type-dot ${item.type || 'activity'}"></span>
-                        <select class="event-edit-select" data-field="time">
-                            <option value="morning" ${timeValue === 'morning' ? 'selected' : ''}>Morning</option>
-                            <option value="afternoon" ${timeValue === 'afternoon' ? 'selected' : ''}>Afternoon</option>
-                            <option value="evening" ${timeValue === 'evening' ? 'selected' : ''}>Evening</option>
-                            <option value="night" ${timeValue === 'night' ? 'selected' : ''}>Night</option>
-                        </select>
+                        <input type="text" class="event-edit-input" data-field="time"
+                               value="${this.escapeHtml(timeValue)}"
+                               placeholder="e.g. 7:30pm, 1:30-4pm, morning..."
+                               style="min-width: 140px;">
                         <button class="event-edit-delete" data-action="delete" aria-label="Delete event">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
