@@ -197,14 +197,32 @@ app.post('/api/chat', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Message cannot be empty' });
     }
 
+    // Initialize chat history if needed
+    if (!req.session.chatHistory) {
+      req.session.chatHistory = [];
+    }
+
+    // Add user message to history
+    req.session.chatHistory.push({ role: 'user', content: message });
+
+    // Limit history to last 20 messages to avoid token limits
+    if (req.session.chatHistory.length > 20) {
+      req.session.chatHistory = req.session.chatHistory.slice(-20);
+    }
+
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
       system: getSystemPrompt(),
-      messages: [{ role: 'user', content: message }]
+      messages: req.session.chatHistory
     });
 
-    res.json({ response: response.content[0].text });
+    const assistantMessage = response.content[0].text;
+
+    // Add assistant response to history
+    req.session.chatHistory.push({ role: 'assistant', content: assistantMessage });
+
+    res.json({ response: assistantMessage });
   } catch (err) {
     console.error('Chat error:', err);
 
