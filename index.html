@@ -1651,6 +1651,39 @@
             // Render day items
             html += this.renderDayItems(dayData.items);
 
+            // Add event buttons
+            html += `
+            <div style="margin-top: 24px; padding: 0 16px;">
+                <button class="add-event-btn" data-time="morning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Morning Event
+                </button>
+                <button class="add-event-btn" data-time="afternoon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Afternoon Event
+                </button>
+                <button class="add-event-btn" data-time="evening">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Evening Event
+                </button>
+                <button class="add-event-btn" data-time="night">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Night Event
+                </button>
+            </div>`;
+
             this.container.innerHTML = html;
 
             // Attach click handlers
@@ -1719,6 +1752,14 @@
                         this.deleteEvent(index);
                     });
                 }
+            });
+
+            // Add event button handlers
+            this.container.querySelectorAll('.add-event-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const time = btn.dataset.time;
+                    this.addNewEvent(time);
+                });
             });
 
             // Click outside to save
