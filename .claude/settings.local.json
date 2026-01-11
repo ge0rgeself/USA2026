@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:writing-plans)",
+      "Bash(if not exist \"C:\\\\Users\\\\George\\\\nyc\\\\docs\\\\plans\" mkdir \"C:\\\\Users\\\\George\\\\nyc\\\\docs\\\\plans\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(npm install:*)",
+      "Bash(node -e:*)",
+      "Bash(node -c:*)"
+    ]
+  }
+}
