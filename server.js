@@ -129,6 +129,59 @@ async function loadItinerary() {
 // Load on startup
 loadItinerary();
 
+function regenerateItineraryTxt(data) {
+    let txt = '';
+
+    // Hotel
+    if (data.hotel) {
+        txt += '# Hotel\n';
+        txt += data.hotel + '\n\n';
+    }
+
+    // Reservations
+    if (data.reservations && data.reservations.length > 0) {
+        txt += '# Reservations\n';
+        data.reservations.forEach(r => {
+            txt += `- ${r}\n`;
+        });
+        txt += '\n';
+    }
+
+    // Days
+    data.days.forEach(day => {
+        txt += `# ${day.date} (${day.dayOfWeek})${day.title ? ' - ' + day.title : ''}\n`;
+        day.items.forEach(item => {
+            let line = '- ';
+            if (item.fallback) {
+                line += 'fallback: ';
+            }
+            if (item.time && !item.fallback) {
+                line += item.time + ': ';
+            }
+            line += item.description;
+            if (item.optional && !item.fallback) {
+                if (item.time) {
+                    line = line.replace(item.time + ':', item.time + ' (optional):');
+                } else {
+                    line += ' (optional)';
+                }
+            }
+            txt += line + '\n';
+        });
+        txt += '\n';
+    });
+
+    // Notes
+    if (data.notes && data.notes.length > 0) {
+        txt += '# Notes\n';
+        data.notes.forEach(n => {
+            txt += `- ${n}\n`;
+        });
+    }
+
+    return txt.trim() + '\n';
+}
+
 function getSystemPrompt() {
   return `You are Oscar, an adorable English bulldog puppy who's also a brilliant NYC trip assistant. You're helping plan a trip for Jan 14-18, 2025.
 
@@ -221,6 +274,136 @@ app.put('/api/itinerary', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Error saving itinerary:', err);
     res.status(500).json({ error: 'Failed to save itinerary' });
+  }
+});
+
+// PATCH endpoint for updating items
+app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
+  try {
+    const { day, index, item } = req.body;
+
+    if (typeof day !== 'number' || typeof index !== 'number' || !item) {
+      return res.status(400).json({ error: 'Missing day, index, or item' });
+    }
+
+    if (!itineraryJson.days[day] || !itineraryJson.days[day].items[index]) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Update the item (keep place data if description unchanged)
+    const existingItem = itineraryJson.days[day].items[index];
+    const descriptionChanged = existingItem.description !== item.description;
+
+    itineraryJson.days[day].items[index] = {
+      ...existingItem,
+      time: item.time,
+      description: item.description,
+      fallback: item.fallback,
+      optional: item.optional,
+      type: existingItem.type,
+      place: descriptionChanged ? null : existingItem.place
+    };
+
+    // Regenerate txt
+    itineraryTxt = regenerateItineraryTxt(itineraryJson);
+    fs.writeFileSync('./itinerary.txt', itineraryTxt, 'utf-8');
+
+    // Re-enrich if description changed
+    if (descriptionChanged) {
+      const parsed = parseItinerary(itineraryTxt);
+      itineraryJson = await enrichItinerary(parsed, genAI);
+      fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+    } else {
+      fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+    }
+
+    res.json({ success: true, json: itineraryJson });
+  } catch (err) {
+    console.error('Update item error:', err);
+    res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
+// POST endpoint for adding items
+app.post('/api/itinerary/item', requireAuth, async (req, res) => {
+  try {
+    const { day, item } = req.body;
+
+    if (typeof day !== 'number' || !item || !item.description) {
+      return res.status(400).json({ error: 'Missing day or item' });
+    }
+
+    if (!itineraryJson.days[day]) {
+      return res.status(404).json({ error: 'Day not found' });
+    }
+
+    // Create new item
+    const newItem = {
+      time: item.time || 'morning',
+      description: item.description,
+      type: 'activity',
+      fallback: item.fallback || false,
+      optional: item.optional || false,
+      place: null
+    };
+
+    // Find insert position based on time
+    const timeOrder = ['morning', 'afternoon', 'evening', 'night'];
+    const targetOrder = timeOrder.indexOf(newItem.time);
+
+    let insertIndex = itineraryJson.days[day].items.length;
+    for (let i = 0; i < itineraryJson.days[day].items.length; i++) {
+      const existingTime = itineraryJson.days[day].items[i].time?.toLowerCase();
+      const existingOrder = timeOrder.indexOf(existingTime);
+      if (existingOrder > targetOrder || (existingOrder === -1 && targetOrder >= 0)) {
+        insertIndex = i;
+        break;
+      }
+    }
+
+    itineraryJson.days[day].items.splice(insertIndex, 0, newItem);
+
+    // Regenerate txt
+    itineraryTxt = regenerateItineraryTxt(itineraryJson);
+    fs.writeFileSync('./itinerary.txt', itineraryTxt, 'utf-8');
+
+    // Enrich the new item
+    const parsed = parseItinerary(itineraryTxt);
+    itineraryJson = await enrichItinerary(parsed, genAI);
+    fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+
+    res.json({ success: true, json: itineraryJson });
+  } catch (err) {
+    console.error('Add item error:', err);
+    res.status(500).json({ error: 'Failed to add item' });
+  }
+});
+
+// DELETE endpoint for removing items
+app.delete('/api/itinerary/item', requireAuth, async (req, res) => {
+  try {
+    const { day, index } = req.body;
+
+    if (typeof day !== 'number' || typeof index !== 'number') {
+      return res.status(400).json({ error: 'Missing day or index' });
+    }
+
+    if (!itineraryJson.days[day] || !itineraryJson.days[day].items[index]) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Remove the item
+    itineraryJson.days[day].items.splice(index, 1);
+
+    // Regenerate txt
+    itineraryTxt = regenerateItineraryTxt(itineraryJson);
+    fs.writeFileSync('./itinerary.txt', itineraryTxt, 'utf-8');
+    fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+
+    res.json({ success: true, json: itineraryJson });
+  } catch (err) {
+    console.error('Delete item error:', err);
+    res.status(500).json({ error: 'Failed to delete item' });
   }
 });
 
