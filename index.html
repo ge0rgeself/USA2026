@@ -1696,8 +1696,25 @@
     // ========== DYNAMIC CALENDAR ==========
     class CalendarRenderer {
         constructor() {
-            this.container = document.querySelector('.calendar-main');
+            this.container = document.getElementById('event-list');
+            this.pillsContainer = document.getElementById('day-pills');
+            this.currentDayEl = document.getElementById('cal-current-day');
+            this.reservationsBanner = document.getElementById('reservations-banner');
+            this.reservationsText = document.getElementById('reservations-text');
             this.data = null;
+            this.selectedDay = 1;
+            this.expandedEvent = null;
+            this.initPillHandlers();
+        }
+
+        initPillHandlers() {
+            this.pillsContainer.addEventListener('click', (e) => {
+                const pill = e.target.closest('.day-pill');
+                if (pill) {
+                    const day = parseInt(pill.dataset.day);
+                    this.selectDay(day);
+                }
+            });
         }
 
         async load() {
@@ -1711,155 +1728,276 @@
             }
         }
 
+        selectDay(day) {
+            if (day === this.selectedDay) return;
+
+            // Update pills
+            this.pillsContainer.querySelectorAll('.day-pill').forEach(p => {
+                p.classList.toggle('active', parseInt(p.dataset.day) === day);
+            });
+
+            // Fade transition
+            this.container.classList.add('transitioning');
+            setTimeout(() => {
+                this.selectedDay = day;
+                this.expandedEvent = null;
+                this.render();
+                this.container.classList.remove('transitioning');
+            }, 150);
+        }
+
         render() {
             if (!this.data) return;
 
-            const html = `
-                ${this.renderReservations()}
-                ${this.data.days.map((day, i) => this.renderDay(day, i + 1)).join('')}
-                ${this.renderFooterNotes()}
-            `;
+            const dayData = this.data.days[this.selectedDay - 1];
+            if (!dayData) return;
 
-            this.container.innerHTML = html;
-            initCalendarNav(); // Reinitialize scroll observer
-        }
+            // Update header
+            const fullDayName = this.getFullDayName(dayData.dayOfWeek);
+            this.currentDayEl.textContent = `${fullDayName}, ${dayData.date}`;
 
-        renderReservations() {
-            if (!this.data.reservations || this.data.reservations.length === 0) return '';
+            // Check for reservations today
+            this.updateReservationsBanner(dayData);
 
-            return `
-            <div class="reservations">
-                <div class="reservations-header">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="16" y1="2" x2="16" y2="6"/>
-                        <line x1="8" y1="2" x2="8" y2="6"/>
-                        <line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                    <h2>Book Ahead</h2>
-                </div>
-                <div class="res-grid">
-                    ${this.data.reservations.map(r => `
-                        <div class="res-item">
-                            <div class="res-item-info">
-                                <span class="res-item-name">${this.escapeHtml(r)}</span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
-
-        renderDay(day, dayNum) {
-            const dateNum = day.date.replace('Jan ', '');
-
-            return `
-            <section class="day" id="day${dayNum}">
-                <div class="day-header">
-                    <span class="day-number">${String(dayNum).padStart(2, '0')}</span>
-                    <div class="day-info">
-                        <span class="day-date">${day.dayOfWeek}, January ${dateNum}</span>
-                        <h2 class="day-title">${this.escapeHtml(day.title)}</h2>
-                    </div>
-                </div>
-                <div class="timeline">
-                    ${this.renderItems(day.items)}
-                </div>
-            </section>`;
-        }
-
-        renderItems(items) {
+            // Render events
             let html = '';
-            let lastTimeGroup = null;
 
-            for (const item of items) {
-                // Add time section divider for major time changes
-                const timeGroup = this.getTimeGroup(item.time);
-                if (timeGroup && timeGroup !== lastTimeGroup) {
-                    html += `
-                    <div class="time-section">
-                        <span class="time-section-label">${timeGroup}</span>
-                        <div class="time-section-line"></div>
-                    </div>`;
-                    lastTimeGroup = timeGroup;
-                }
-
-                html += this.renderEvent(item);
+            // Add hotel row on day 1
+            if (this.selectedDay === 1 && this.data.hotel) {
+                html += this.renderHotelRow();
             }
 
-            return html;
+            // Render day items
+            html += this.renderDayItems(dayData.items);
+
+            this.container.innerHTML = html;
+
+            // Attach click handlers
+            this.container.querySelectorAll('.event-row').forEach((row, index) => {
+                row.addEventListener('click', () => this.toggleEvent(index));
+            });
         }
 
-        getTimeGroup(time) {
-            if (!time) return null;
-            const t = time.toLowerCase();
-            if (t === 'morning' || t === 'breakfast' || t.match(/^([6-9]|10|11)(am|:00\s*am)/i)) return 'Morning';
-            if (t === 'afternoon' || t === 'lunch' || t.match(/^(12|1|2|3|4)(pm|:00\s*pm)/i)) return 'Afternoon';
-            if (t === 'evening' || t === 'dinner' || t.match(/^(5|6|7)(pm|:00\s*pm)/i)) return 'Evening';
-            if (t === 'night' || t === 'late' || t.match(/^(8|9|10|11)(pm|:00\s*pm)/i)) return 'Night';
-            return null;
-        }
-
-        renderEvent(item) {
-            const typeClass = item.type || 'activity';
-            const fallbackClass = item.fallback ? 'fallback' : '';
-            const optionalClass = item.optional ? 'optional' : '';
-
-            const place = item.place;
-            const name = place?.name || item.description;
-            const nameHtml = place?.website
-                ? `<a href="${this.escapeHtml(place.website)}">${this.escapeHtml(name)}</a>`
-                : this.escapeHtml(name);
+        renderHotelRow() {
+            const hotel = this.data.hotel;
+            const hotelData = typeof hotel === 'object' ? hotel : { name: hotel };
+            const isExpanded = this.expandedEvent === 'hotel';
 
             return `
-            <div class="event ${fallbackClass} ${optionalClass}" data-type="${typeClass}">
-                <span class="event-time">${item.timeDisplay || ''}</span>
-                <div class="event-card">
-                    ${item.fallback ? '<div class="event-label">Fallback</div>' : ''}
-                    ${item.optional ? '<div class="event-label">Optional</div>' : ''}
-                    <div class="event-name">${nameHtml}</div>
-                    ${place?.address ? `
+            <div class="event-row hotel-row ${isExpanded ? 'expanded' : ''}" data-event="hotel">
+                <div class="event-row-collapsed">
+                    <span class="event-type-dot hotel"></span>
+                    <span class="event-time">Hotel</span>
+                    <span class="event-name">${this.escapeHtml(hotelData.name || hotel)}</span>
+                    <span class="event-neighborhood">LES</span>
+                    <svg class="event-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="event-row-expanded">
+                    ${hotelData.address ? `
                         <div class="event-address">
-                            <a href="${this.escapeHtml(place.mapsUrl)}" target="_blank">${this.escapeHtml(place.address)}</a>
+                            <a href="${this.escapeHtml(hotelData.mapsUrl || '#')}" target="_blank">${this.escapeHtml(hotelData.address)}</a>
                         </div>
                     ` : ''}
-                    ${place?.address ? `
-                        <div class="actions">
-                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place.address)}&travelmode=walking" target="_blank">
+                    <div class="event-actions">
+                        ${hotelData.address ? `
+                            <a class="event-action-btn" href="https://maps.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hotelData.address)}&travelmode=walking" target="_blank">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
                                     <circle cx="12" cy="10" r="3"/>
                                 </svg>
                                 Directions
                             </a>
-                        </div>
-                    ` : ''}
-                    ${place?.tips ? `
-                        <div class="tips">${this.escapeHtml(place.tips)}</div>
-                    ` : ''}
+                        ` : ''}
+                    </div>
                 </div>
             </div>`;
         }
 
-        renderFooterNotes() {
-            if (!this.data.notes || this.data.notes.length === 0) return '';
+        renderDayItems(items) {
+            let html = '';
+            let lastTimeGroup = null;
+            let eventIndex = this.selectedDay === 1 && this.data.hotel ? 1 : 0;
+
+            for (const item of items) {
+                // Time divider
+                const timeGroup = this.getTimeGroup(item.time);
+                if (timeGroup && timeGroup !== lastTimeGroup) {
+                    html += `
+                    <div class="time-divider">
+                        <span class="time-divider-label">${timeGroup}</span>
+                        <div class="time-divider-line"></div>
+                    </div>`;
+                    lastTimeGroup = timeGroup;
+                }
+
+                html += this.renderEventRow(item, eventIndex);
+                eventIndex++;
+            }
+
+            return html;
+        }
+
+        renderEventRow(item, index) {
+            const isExpanded = this.expandedEvent === index;
+            const place = item.place;
+            const name = place?.name || item.description;
+            const neighborhood = this.extractNeighborhood(place?.address);
+            const typeClass = item.type || 'activity';
+
+            let badgeHtml = '';
+            if (item.fallback) badgeHtml = '<span class="event-badge">Backup</span>';
+            else if (item.optional) badgeHtml = '<span class="event-badge">Optional</span>';
+
+            const rowClasses = [
+                'event-row',
+                isExpanded ? 'expanded' : '',
+                item.fallback ? 'fallback' : '',
+                item.optional ? 'optional' : ''
+            ].filter(Boolean).join(' ');
 
             return `
-            <div class="footer-notes">
-                ${this.data.notes.map(note => `
-                    <div class="footer-note">
-                        <div class="footer-note-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                            </svg>
+            <div class="${rowClasses}" data-event="${index}">
+                <div class="event-row-collapsed">
+                    <span class="event-type-dot ${typeClass}"></span>
+                    <span class="event-time">${this.formatTime(item.time) || ''}</span>
+                    <span class="event-name">${this.escapeHtml(name)}</span>
+                    ${badgeHtml}
+                    ${neighborhood ? `<span class="event-neighborhood">${neighborhood}</span>` : ''}
+                    <svg class="event-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="event-row-expanded">
+                    ${place?.address ? `
+                        <div class="event-address">
+                            <a href="${this.escapeHtml(place.mapsUrl)}" target="_blank">${this.escapeHtml(place.address)}</a>
                         </div>
-                        <div>
-                            <p>${this.escapeHtml(note)}</p>
-                        </div>
+                    ` : ''}
+                    <div class="event-actions">
+                        ${place?.address ? `
+                            <a class="event-action-btn" href="https://maps.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place.address)}&travelmode=walking" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                                Directions
+                            </a>
+                        ` : ''}
+                        ${place?.website ? `
+                            <a class="event-action-btn" href="${this.escapeHtml(place.website)}" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="2" y1="12" x2="22" y2="12"/>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                </svg>
+                                Website
+                            </a>
+                        ` : ''}
                     </div>
-                `).join('')}
+                    ${place?.tips ? `<div class="event-tips">${this.escapeHtml(place.tips)}</div>` : ''}
+                </div>
             </div>`;
+        }
+
+        toggleEvent(index) {
+            if (this.expandedEvent === index) {
+                this.expandedEvent = null;
+            } else {
+                this.expandedEvent = index;
+            }
+            this.render();
+        }
+
+        updateReservationsBanner(dayData) {
+            // Count items that are likely reservations (Hamilton, restaurants with reservations)
+            const reservationKeywords = ['hamilton', 'minetta', 'vanguard', 'museum'];
+            const reservationItems = dayData.items.filter(item => {
+                const desc = (item.description || '').toLowerCase();
+                return reservationKeywords.some(kw => desc.includes(kw));
+            });
+
+            if (reservationItems.length > 0) {
+                this.reservationsBanner.style.display = 'flex';
+                this.reservationsText.textContent = `${reservationItems.length} reservation${reservationItems.length > 1 ? 's' : ''} today`;
+            } else {
+                this.reservationsBanner.style.display = 'none';
+            }
+        }
+
+        extractNeighborhood(address) {
+            if (!address) return '';
+
+            const neighborhoods = {
+                'lower east side': 'LES',
+                'east village': 'EV',
+                'west village': 'WV',
+                'soho': 'SoHo',
+                'tribeca': 'TriBeCa',
+                'chinatown': 'Chinatown',
+                'dumbo': 'DUMBO',
+                'brooklyn heights': 'Brooklyn',
+                'midtown': 'Midtown',
+                'upper east': 'UES',
+                'upper west': 'UWS',
+                'greenwich': 'WV',
+                'fulton': 'FiDi',
+                'houston': 'LES',
+                'bowery': 'LES'
+            };
+
+            const lowerAddr = address.toLowerCase();
+            for (const [key, abbrev] of Object.entries(neighborhoods)) {
+                if (lowerAddr.includes(key)) return abbrev;
+            }
+            return '';
+        }
+
+        formatTime(time) {
+            if (!time) return '';
+
+            const timeMap = {
+                'morning': '9 AM',
+                'afternoon': '2 PM',
+                'evening': '6 PM',
+                'night': '9 PM',
+                'late': '11 PM',
+                'breakfast': '8 AM',
+                'lunch': '12 PM',
+                'dinner': '7 PM',
+                'brunch': '10 AM'
+            };
+
+            const lower = time.toLowerCase();
+            if (timeMap[lower]) return timeMap[lower];
+
+            // Handle "11am" -> "11 AM"
+            const match = time.match(/^(\d{1,2})(am|pm)$/i);
+            if (match) {
+                return `${match[1]} ${match[2].toUpperCase()}`;
+            }
+
+            // Handle ranges like "1:30-4pm"
+            return time;
+        }
+
+        getTimeGroup(time) {
+            if (!time) return null;
+            const t = time.toLowerCase();
+            if (t === 'morning' || t === 'breakfast' || /^([6-9]|10|11)(am|:)/i.test(t)) return 'Morning';
+            if (t === 'afternoon' || t === 'lunch' || /^(12|1|2|3|4)(pm|:)/i.test(t)) return 'Afternoon';
+            if (t === 'evening' || t === 'dinner' || /^(5|6|7)(pm|:)/i.test(t)) return 'Evening';
+            if (t === 'night' || t === 'late' || /^(8|9|10|11)(pm|:)/i.test(t)) return 'Night';
+            return null;
+        }
+
+        getFullDayName(abbrev) {
+            const days = {
+                'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday',
+                'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday'
+            };
+            return days[abbrev] || abbrev;
         }
 
         escapeHtml(text) {
