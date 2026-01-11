@@ -1,52 +1,87 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-NYC trip chatbot and interactive HTML travel guide for a January 14-18, 2025 NYC trip. The project has two main components:
+NYC trip chatbot and interactive travel guide for January 14-18, 2025. Features:
+- Single-page HTML travel guide with timeline view
+- Claude-powered chat assistant for trip questions
+- Google OAuth authentication (whitelist: self.gt@gmail.com, valmikh17@gmail.com)
+- Hosted on Google Cloud Run
 
-1. **Static HTML Guide** (`nyc_itinerary.html`) - A single-page, mobile-friendly travel guide with deep links to venues, maps, and booking sites
-2. **Chat Assistant** (`server.js`) - Express server with Claude API integration providing a conversational trip assistant embedded in the HTML
+**Live URL:** https://nyc-trip-522204863154.us-central1.run.app
 
-## Development Commands
+## File Structure
 
+| File | Purpose |
+|------|---------|
+| `server.js` | Express server with Google OAuth + Claude chat API |
+| `nyc_itinerary.html` | Main trip guide (dark theme, timeline, chat widget) |
+| `nyc_itinerary.md` | Itinerary data fed to Claude for context |
+| `login.html` | Google Sign-In page |
+| `Dockerfile` | Container config for Cloud Run |
+| `.env` | Local dev secrets (gitignored) |
+
+## Development
+
+### Local Testing
 ```bash
-# Install dependencies
 npm install
-
-# Run development server (requires ANTHROPIC_API_KEY in .env)
 npm start
+# Open http://localhost:8080
+# Note: OAuth won't work locally (callback URL mismatch)
+```
 
-# Build Docker image
-docker build -t nyc-trip-chatbot .
+### Deploy to Cloud Run
+```bash
+gcloud run deploy nyc-trip --source . --region us-central1
+```
 
-# Run Docker container
-docker run -p 8080:8080 -e ANTHROPIC_API_KEY=your-key nyc-trip-chatbot
+Full deploy with secrets:
+```bash
+gcloud run deploy nyc-trip --source . --region us-central1 \
+  --allow-unauthenticated \
+  --set-secrets=ANTHROPIC_API_KEY=anthropic-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest \
+  --set-env-vars=NODE_ENV=production --port 8080
 ```
 
 ## Architecture
 
-- `server.js` - Express server that:
-  - Serves static files from root directory
-  - Exposes `/api/chat` endpoint for Claude-powered trip assistant
-  - Injects `nyc_itinerary.md` into Claude's system prompt for context
-  - Uses `claude-sonnet-4-20250514` model with 500 max tokens
+### Authentication Flow
+1. Unauthenticated users → redirect to `/login`
+2. Click "Sign in with Google" → Google OAuth consent
+3. Callback validates email against whitelist
+4. 7-day session cookie set on success
+5. Logout via `/logout`
 
-- `nyc_itinerary.html` - Self-contained HTML with:
-  - Embedded CSS (dark theme with gold accents)
-  - Timeline-based day view with color-coded event types
-  - Sticky day navigation with scroll-based active state
-  - Chat widget (bottom-right) that calls `/api/chat`
-  - Mobile-responsive design
+### Server Routes
+- `GET /` - Main itinerary (protected)
+- `GET /login` - Login page
+- `GET /auth/google` - Initiate OAuth
+- `GET /auth/google/callback` - OAuth callback
+- `GET /logout` - Clear session
+- `POST /api/chat` - Claude chat endpoint (protected)
 
-- `nyc_itinerary.md` - Source itinerary data (5 days of activities, reservations, tips)
+## Google Cloud Resources
 
-## Environment
+**Project:** glexpenses-c46fb
 
-Requires `.env` file with:
+| Service | Resource |
+|---------|----------|
+| Cloud Run | `nyc-trip` (us-central1) |
+| Secret Manager | `anthropic-api-key`, `google-client-id`, `google-client-secret` |
+| OAuth Credentials | `nyc-trip` web client |
+
+## Environment Variables
+
+### Local (.env)
 ```
-ANTHROPIC_API_KEY=your-api-key
+ANTHROPIC_API_KEY=your-key
 ```
 
-Server runs on port 8080 (configurable via `PORT` env var).
+### Production (via Secret Manager)
+- `ANTHROPIC_API_KEY` - Claude API key
+- `GOOGLE_CLIENT_ID` - OAuth client ID
+- `GOOGLE_CLIENT_SECRET` - OAuth client secret
+- `NODE_ENV=production` - Enables secure cookies

@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>NYC Jan 14-18 | Your Trip Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0f0d0a;
+            --bg-main: #1a1814;
+            --bg-card: #252219;
+            --bg-elevated: #2d2a22;
+            --gold: #d4a574;
+            --gold-light: #e8c9a4;
+            --gold-dim: #9a7a54;
+            --cream: #f5f0e8;
+            --cream-dim: #b8b0a4;
+            --coral: #e07a5f;
+            --teal: #5fa8a0;
+            --violet: #9d8ec9;
+            --sage: #7d9a78;
+            --timeline-line: #3d382e;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --shadow-lg: 0 12px 48px rgba(0,0,0,0.5);
+            --nav-height: 64px;
+            --nav-height-mobile: 72px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: var(--cream);
+            line-height: 1.6;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+        }
+
+        /* Subtle grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        /* ========== GLOBAL NAVIGATION ========== */
+        .app-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: var(--nav-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: linear-gradient(180deg, rgba(15, 13, 10, 0.98) 0%, rgba(15, 13, 10, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(212, 165, 116, 0.15);
+        }
+
+        .app-nav-brand {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--gold);
+            letter-spacing: -0.5px;
+        }
+
+        .app-nav-links {
+            display: flex;
+            gap: 6px;
+            background: var(--bg-card);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid var(--timeline-line);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--cream-dim);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .nav-link svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.7;
+            transition: opacity 0.25s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--cream);
+            background: var(--bg-elevated);
+        }
+
+        .nav-link:hover svg {
+            opacity: 1;
+        }
+
+        .nav-link.active {
+            color: var(--gold);
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(212, 165, 116, 0.05) 100%);
+        }
+
+        .nav-link.active svg {
+            opacity: 1;
+            color: var(--gold);
+        }
+
+        .logout-btn {
+            padding: 10px 16px;
+            background: transparent;
+            border: 1px solid var(--timeline-line);
+            border-radius: 10px;
+            color: var(--cream-dim);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .logout-btn:hover {
+            background: var(--bg-card);
+            border-color: var(--gold-dim);
+            color: var(--cream);
+        }
+
+        /* Mobile Bottom Navigation */
+        @media (max-width: 768px) {
+            .app-nav {
+                top: auto;
+                bottom: 0;
+                height: var(--nav-height-mobile);
+                padding: 0;
+                padding-bottom: env(safe-area-inset-bottom);
+                border-bottom: none;
+                border-top: 1px solid rgba(212, 165, 116, 0.15);
+            }
+
+            .app-nav-brand, .logout-btn {
+                display: none;
+            }
+
+            .app-nav-links {
+                flex: 1;
+                justify-content: space-around;
+                background: transparent;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 0;
+            }
+
+            .nav-link {
+                flex-direction: column;
+                gap: 4px;
+                padding: 8px 20px;
+                font-size: 11px;
+                letter-spacing: 0.3px;
+            }
+
+            .nav-link svg {
+                width: 22px;
+                height: 22px;
+            }
+        }
+
+        /* ========== VIEW CONTAINERS ========== */
+        .view {
+            display: none;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-top: var(--nav-height);
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .view.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .view {
+                padding-top: 0;
+                padding-bottom: var(--nav-height-mobile);
+            }
+        }
+
+        /* ========== CALENDAR VIEW (existing styles) ========== */
+        .hero {
+            background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-main) 100%);
+            padding: 60px 24px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(212, 165, 116, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(212, 165, 116, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-eyebrow {
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 16px;
+            font-weight: 600;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(48px, 12vw, 96px);
+            font-weight: 400;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 0.1s forwards;
+        }
+
+        .hero-dates {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px;
+            color: var(--cream-dim);
+            margin-bottom: 32px;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 0.2s forwards;
+        }
+
+        .hero-hotel {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 14px 24px;
+            border-radius: 100px;
+            border: 1px solid var(--timeline-line);
+            text-decoration: none;
+            color: var(--cream);
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 0.3s forwards;
+        }
+
+        .hero-hotel:hover {
+            background: var(--bg-elevated);
+            border-color: var(--gold-dim);
+            transform: translateY(-2px);
+        }
+
+        .hero-hotel svg {
+            width: 18px;
+            height: 18px;
+            color: var(--gold);
+        }
+
+        .hero-hotel span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Day Navigation */
+        .day-nav {
+            position: sticky;
+            top: var(--nav-height);
+            z-index: 100;
+            background: linear-gradient(180deg, var(--bg-main) 0%, rgba(26, 24, 20, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--timeline-line);
+            padding: 0 24px;
+        }
+
+        @media (max-width: 768px) {
+            .day-nav {
+                top: 0;
+            }
+        }
+
+        .day-nav-inner {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 16px 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .day-nav-inner::-webkit-scrollbar {
+            display: none;
+        }
+
+        .day-nav a {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--cream-dim);
+            transition: all 0.3s ease;
+            min-width: 80px;
+        }
+
+        .day-nav a:hover {
+            background: var(--bg-card);
+            color: var(--cream);
+        }
+
+        .day-nav a .day-num {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 24px;
+            font-weight: 500;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .day-nav a .day-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .day-nav a.active {
+            background: var(--bg-card);
+            border-color: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        /* Main Content */
+        .calendar-main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px 100px;
+        }
+
+        /* Reservations Box */
+        .reservations {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(212, 165, 116, 0.02) 100%);
+            border: 1px solid var(--gold-dim);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 48px;
+        }
+
+        .reservations-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .reservations-header svg {
+            width: 20px;
+            height: 20px;
+            color: var(--gold);
+        }
+
+        .reservations h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--gold-light);
+        }
+
+        .res-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .res-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--timeline-line);
+        }
+
+        .res-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .res-item-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .res-item-when {
+            font-size: 12px;
+            color: var(--cream-dim);
+        }
+
+        .res-item a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--gold);
+            color: var(--bg-deep);
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+
+        .res-item a:hover {
+            background: var(--gold-light);
+            transform: translateY(-1px);
+        }
+
+        /* Day Section */
+        .day {
+            margin-bottom: 64px;
+        }
+
+        .day-header {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--timeline-line);
+        }
+
+        .day-number {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 64px;
+            font-weight: 400;
+            color: var(--gold);
+            line-height: 1;
+            opacity: 0.7;
+        }
+
+        .day-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .day-date {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--cream-dim);
+            margin-bottom: 4px;
+        }
+
+        .day-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 28px;
+            font-weight: 500;
+            color: var(--cream);
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 80px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 28px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background: linear-gradient(180deg, var(--timeline-line) 0%, transparent 100%);
+            border-radius: 1px;
+        }
+
+        .event {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .event::before {
+            content: '';
+            position: absolute;
+            left: -52px;
+            top: 24px;
+            width: 12px;
+            height: 12px;
+            background: var(--bg-main);
+            border: 2px solid var(--timeline-line);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .event:hover::before {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 4px rgba(212, 165, 116, 0.2);
+        }
+
+        .event-time {
+            position: absolute;
+            left: -80px;
+            top: 20px;
+            width: 60px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gold);
+            letter-spacing: 0.5px;
+        }
+
+        .event-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--timeline-line);
+            transition: all 0.3s ease;
+        }
+
+        .event:hover .event-card {
+            border-color: var(--gold-dim);
+            transform: translateX(4px);
+            box-shadow: var(--shadow);
+        }
+
+        .event[data-type="food"] .event-card { border-left: 3px solid var(--coral); }
+        .event[data-type="food"]::before { border-color: var(--coral); }
+        .event[data-type="food"] .event-time { color: var(--coral); }
+
+        .event[data-type="culture"] .event-card { border-left: 3px solid var(--teal); }
+        .event[data-type="culture"]::before { border-color: var(--teal); }
+        .event[data-type="culture"] .event-time { color: var(--teal); }
+
+        .event[data-type="entertainment"] .event-card { border-left: 3px solid var(--violet); }
+        .event[data-type="entertainment"]::before { border-color: var(--violet); }
+        .event[data-type="entertainment"] .event-time { color: var(--violet); }
+
+        .event[data-type="activity"] .event-card { border-left: 3px solid var(--sage); }
+        .event[data-type="activity"]::before { border-color: var(--sage); }
+        .event[data-type="activity"] .event-time { color: var(--sage); }
+
+        .event[data-type="transit"] .event-card {
+            background: transparent;
+            border: 1px dashed var(--timeline-line);
+            padding: 14px 20px;
+        }
+
+        .event[data-type="transit"]::before {
+            width: 8px;
+            height: 8px;
+            left: -50px;
+            top: 18px;
+            background: var(--timeline-line);
+            border: none;
+        }
+
+        .event.fallback .event-card {
+            opacity: 0.6;
+            border-style: dashed;
+        }
+
+        .event.fallback .event-label::before {
+            content: 'Fallback: ';
+            color: var(--cream-dim);
+            font-weight: 400;
+        }
+
+        .event-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .event-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--cream-dim);
+            margin-bottom: 4px;
+        }
+
+        .event-name {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .event-name a {
+            color: var(--cream);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .event-name a:hover {
+            color: var(--gold);
+        }
+
+        .event-address {
+            font-size: 13px;
+            color: var(--cream-dim);
+            margin-bottom: 16px;
+        }
+
+        .event-address a {
+            color: var(--cream-dim);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .event-address a:hover {
+            color: var(--gold);
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--timeline-line);
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--cream);
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .action:hover {
+            background: var(--bg-main);
+            border-color: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        .action svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        .action:hover svg {
+            opacity: 1;
+        }
+
+        .action.primary {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: var(--bg-deep);
+        }
+
+        .action.primary:hover {
+            background: var(--gold-light);
+            border-color: var(--gold-light);
+            color: var(--bg-deep);
+        }
+
+        .tips {
+            background: var(--bg-main);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--cream-dim);
+            line-height: 1.6;
+        }
+
+        .tips strong {
+            color: var(--cream);
+            font-weight: 600;
+        }
+
+        .tips ul {
+            margin: 10px 0 0 18px;
+        }
+
+        .tips li {
+            margin-bottom: 4px;
+        }
+
+        .transit-text {
+            font-size: 14px;
+            color: var(--cream-dim);
+        }
+
+        .transit-text strong {
+            color: var(--cream);
+        }
+
+        .time-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 32px 0 24px;
+            padding-left: 0;
+        }
+
+        .time-section::before {
+            display: none;
+        }
+
+        .time-section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--gold-dim);
+            white-space: nowrap;
+        }
+
+        .time-section-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--timeline-line), transparent);
+        }
+
+        .footer-notes {
+            margin-top: 64px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .footer-note {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--timeline-line);
+            display: flex;
+            gap: 16px;
+        }
+
+        .footer-note-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .footer-note-icon svg {
+            width: 20px;
+            height: 20px;
+            color: var(--gold);
+        }
+
+        .footer-note h3 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .footer-note p {
+            font-size: 14px;
+            color: var(--cream-dim);
+            line-height: 1.6;
+        }
+
+        /* Calendar Mobile Responsive */
+        @media (max-width: 640px) {
+            .hero {
+                padding: 48px 20px 32px;
+            }
+
+            .hero h1 {
+                font-size: 56px;
+            }
+
+            .day-nav {
+                padding: 0 16px;
+            }
+
+            .calendar-main {
+                padding: 32px 16px 80px;
+            }
+
+            .timeline {
+                padding-left: 0;
+            }
+
+            .timeline::before {
+                display: none;
+            }
+
+            .event::before {
+                display: none;
+            }
+
+            .event-time {
+                position: static;
+                width: auto;
+                text-align: left;
+                margin-bottom: 8px;
+                font-size: 11px;
+            }
+
+            .day-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .day-number {
+                font-size: 48px;
+            }
+
+            .reservations {
+                padding: 20px;
+            }
+
+            .res-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .footer-note {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+
+        /* ========== EDITOR VIEW ========== */
+        #view-editor {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        #view-editor.active {
+            display: flex;
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding-top: var(--nav-height);
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .editor-container {
+                padding-top: 0;
+                padding-bottom: var(--nav-height-mobile);
+            }
+        }
+
+        .editor-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 24px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--timeline-line);
+            flex-shrink: 0;
+        }
+
+        .editor-toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .editor-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--cream);
+        }
+
+        .editor-status {
+            font-size: 12px;
+            color: var(--cream-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .editor-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--sage);
+        }
+
+        .editor-status-dot.unsaved {
+            background: var(--coral);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .editor-toolbar-right {
+            display: flex;
+            gap: 8px;
+        }
+
+        .editor-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border: 1px solid var(--timeline-line);
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            color: var(--cream);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .editor-btn:hover {
+            background: var(--bg-main);
+            border-color: var(--gold-dim);
+        }
+
+        .editor-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .editor-btn.primary {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: var(--bg-deep);
+        }
+
+        .editor-btn.primary:hover {
+            background: var(--gold-light);
+        }
+
+        .editor-btn.primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .editor-panes {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        .editor-pane {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-pane-header {
+            padding: 12px 20px;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--timeline-line);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--cream-dim);
+        }
+
+        .editor-pane:first-child {
+            border-right: 1px solid var(--timeline-line);
+        }
+
+        #markdown-editor {
+            flex: 1;
+            background: var(--bg-main);
+            color: var(--cream);
+            border: none;
+            padding: 24px;
+            font-family: 'JetBrains Mono', 'SF Mono', Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.7;
+            resize: none;
+            overflow-y: auto;
+            outline: none;
+        }
+
+        #markdown-editor::placeholder {
+            color: var(--cream-dim);
+        }
+
+        #markdown-preview {
+            flex: 1;
+            background: var(--bg-card);
+            padding: 24px;
+            overflow-y: auto;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        #markdown-preview h1, #markdown-preview h2, #markdown-preview h3 {
+            font-family: 'Playfair Display', Georgia, serif;
+            color: var(--cream);
+            margin: 24px 0 12px;
+        }
+
+        #markdown-preview h1 { font-size: 28px; }
+        #markdown-preview h2 { font-size: 22px; color: var(--gold); }
+        #markdown-preview h3 { font-size: 18px; }
+
+        #markdown-preview p {
+            margin-bottom: 16px;
+            color: var(--cream-dim);
+        }
+
+        #markdown-preview ul, #markdown-preview ol {
+            margin: 0 0 16px 24px;
+            color: var(--cream-dim);
+        }
+
+        #markdown-preview li {
+            margin-bottom: 8px;
+        }
+
+        #markdown-preview strong {
+            color: var(--cream);
+            font-weight: 600;
+        }
+
+        #markdown-preview a {
+            color: var(--gold);
+        }
+
+        #markdown-preview code {
+            background: var(--bg-elevated);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        #markdown-preview hr {
+            border: none;
+            border-top: 1px solid var(--timeline-line);
+            margin: 24px 0;
+        }
+
+        #markdown-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+
+        #markdown-preview th, #markdown-preview td {
+            padding: 10px 12px;
+            border: 1px solid var(--timeline-line);
+            text-align: left;
+        }
+
+        #markdown-preview th {
+            background: var(--bg-elevated);
+            color: var(--cream);
+            font-weight: 600;
+        }
+
+        /* Editor Mobile */
+        @media (max-width: 768px) {
+            .editor-panes {
+                grid-template-columns: 1fr;
+            }
+
+            .editor-pane.preview-pane {
+                display: none;
+            }
+
+            .editor-pane.preview-pane.show {
+                display: flex;
+            }
+
+            .editor-pane.editor-pane-main.hidden {
+                display: none;
+            }
+
+            .editor-toolbar {
+                padding: 12px 16px;
+            }
+
+            .editor-title {
+                font-size: 16px;
+            }
+
+            #markdown-editor, #markdown-preview {
+                padding: 16px;
+            }
+        }
+
+        /* ========== CHAT VIEW ========== */
+        #view-chat {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        #view-chat.active {
+            display: flex;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding-top: var(--nav-height);
+            overflow: hidden;
+            background: var(--bg-main);
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                padding-top: 0;
+                padding-bottom: var(--nav-height-mobile);
+            }
+        }
+
+        .chat-header-full {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--timeline-line);
+            flex-shrink: 0;
+        }
+
+        .chat-header-icon-full {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-header-icon-full svg {
+            width: 24px;
+            height: 24px;
+            color: var(--bg-deep);
+        }
+
+        .chat-header-text h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--cream);
+            margin-bottom: 2px;
+        }
+
+        .chat-header-text p {
+            font-size: 13px;
+            color: var(--cream-dim);
+        }
+
+        .chat-messages-full {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-messages-full::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages-full::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages-full::-webkit-scrollbar-thumb {
+            background: var(--timeline-line);
+            border-radius: 3px;
+        }
+
+        .chat-message-full {
+            display: flex;
+            max-width: 75%;
+            animation: messageSlide 0.3s ease forwards;
+        }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-message-full.user {
+            align-self: flex-end;
+        }
+
+        .chat-message-full.assistant {
+            align-self: flex-start;
+        }
+
+        .chat-message-content-full {
+            padding: 16px 20px;
+            border-radius: 20px;
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .chat-message-content-full a {
+            color: var(--gold);
+            text-decoration: underline;
+        }
+
+        .chat-message-full.user .chat-message-content-full {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+            color: var(--bg-deep);
+            border-bottom-right-radius: 6px;
+        }
+
+        .chat-message-full.user .chat-message-content-full a {
+            color: var(--bg-deep);
+        }
+
+        .chat-message-full.assistant .chat-message-content-full {
+            background: var(--bg-card);
+            color: var(--cream);
+            border: 1px solid var(--timeline-line);
+            border-bottom-left-radius: 6px;
+        }
+
+        .chat-message-full.typing .chat-message-content-full {
+            display: flex;
+            gap: 6px;
+            padding: 20px 24px;
+        }
+
+        .typing-dot-full {
+            width: 10px;
+            height: 10px;
+            background: var(--gold-dim);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot-full:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot-full:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .chat-input-area-full {
+            display: flex;
+            gap: 12px;
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--timeline-line);
+            flex-shrink: 0;
+        }
+
+        .chat-input-full {
+            flex: 1;
+            padding: 16px 20px;
+            background: var(--bg-main);
+            border: 1px solid var(--timeline-line);
+            border-radius: 14px;
+            color: var(--cream);
+            font-size: 16px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .chat-input-full::placeholder {
+            color: var(--cream-dim);
+        }
+
+        .chat-input-full:focus {
+            border-color: var(--gold-dim);
+        }
+
+        .chat-send-full {
+            width: 52px;
+            height: 52px;
+            border: none;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+            color: var(--bg-deep);
+            border-radius: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .chat-send-full:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(212, 165, 116, 0.3);
+        }
+
+        .chat-send-full:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .chat-send-full svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* Chat Mobile */
+        @media (max-width: 768px) {
+            .chat-header-full {
+                padding: 16px 20px;
+            }
+
+            .chat-header-icon-full {
+                width: 42px;
+                height: 42px;
+            }
+
+            .chat-header-text h1 {
+                font-size: 18px;
+            }
+
+            .chat-messages-full {
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .chat-message-full {
+                max-width: 85%;
+            }
+
+            .chat-message-content-full {
+                padding: 14px 16px;
+                font-size: 15px;
+            }
+
+            .chat-input-area-full {
+                padding: 16px;
+            }
+
+            .chat-input-full {
+                padding: 14px 16px;
+            }
+
+            .chat-send-full {
+                width: 48px;
+                height: 48px;
+            }
+        }
+
+        /* ========== TOAST NOTIFICATIONS ========== */
+        .toast-container {
+            position: fixed;
+            top: calc(var(--nav-height) + 16px);
+            right: 16px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 16px;
+                left: 16px;
+                right: 16px;
+            }
+        }
+
+        .toast {
+            padding: 14px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--timeline-line);
+            border-radius: 12px;
+            color: var(--cream);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow-lg);
+            animation: toastSlide 0.3s ease;
+        }
+
+        .toast.success {
+            border-color: var(--sage);
+        }
+
+        .toast.error {
+            border-color: var(--coral);
+        }
+
+        .toast svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .toast.success svg { color: var(--sage); }
+        .toast.error svg { color: var(--coral); }
+
+        @keyframes toastSlide {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Navigation -->
+    <nav class="app-nav">
+        <div class="app-nav-brand">NYC Trip</div>
+        <div class="app-nav-links">
+            <a href="#calendar" class="nav-link active" data-view="calendar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Calendar</span>
+            </a>
+            <a href="#editor" class="nav-link" data-view="editor">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <span>Editor</span>
+            </a>
+            <a href="#chat" class="nav-link" data-view="chat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>Chat</span>
+            </a>
+        </div>
+        <a href="/logout" class="logout-btn">Sign Out</a>
+    </nav>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ========== CALENDAR VIEW ========== -->
+    <div id="view-calendar" class="view active visible">
+        <header class="hero">
+            <p class="hero-eyebrow">Your NYC Adventure</p>
+            <h1>New York</h1>
+            <p class="hero-dates">January 14 - 18, 2025</p>
+            <a class="hero-hotel" href="https://maps.google.com/?q=3+Freeman+Alley,+New+York,+NY+10002" target="_blank">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span>Untitled at 3 Freeman Alley &middot; Lower East Side</span>
+            </a>
+        </header>
+
+        <nav class="day-nav">
+            <div class="day-nav-inner">
+                <a href="#day1" class="active">
+                    <span class="day-num">14</span>
+                    <span class="day-label">Tue</span>
+                </a>
+                <a href="#day2">
+                    <span class="day-num">15</span>
+                    <span class="day-label">Wed</span>
+                </a>
+                <a href="#day3">
+                    <span class="day-num">16</span>
+                    <span class="day-label">Thu</span>
+                </a>
+                <a href="#day4">
+                    <span class="day-num">17</span>
+                    <span class="day-label">Fri</span>
+                </a>
+                <a href="#day5">
+                    <span class="day-num">18</span>
+                    <span class="day-label">Sat</span>
+                </a>
+            </div>
+        </nav>
+
+        <main class="calendar-main">
+            <!-- Reservations -->
+            <div class="reservations">
+                <div class="reservations-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <h2>Book Ahead</h2>
+                </div>
+                <div class="res-grid">
+                    <div class="res-item">
+                        <div class="res-item-info">
+                            <span class="res-item-name">Minetta Tavern</span>
+                            <span class="res-item-when">Friday dinner</span>
+                        </div>
+                        <a href="https://resy.com/cities/ny/minetta-tavern" target="_blank">Resy</a>
+                    </div>
+                    <div class="res-item">
+                        <div class="res-item-info">
+                            <span class="res-item-name">Village Vanguard</span>
+                            <span class="res-item-when">Friday jazz</span>
+                        </div>
+                        <a href="https://villagevanguard.com" target="_blank">Book</a>
+                    </div>
+                    <div class="res-item">
+                        <div class="res-item-info">
+                            <span class="res-item-name">Tenement Museum</span>
+                            <span class="res-item-when">Thursday optional</span>
+                        </div>
+                        <a href="https://tickets.tenement.org" target="_blank">Tickets</a>
+                    </div>
+                    <div class="res-item">
+                        <div class="res-item-info">
+                            <span class="res-item-name">9/11 Museum</span>
+                            <span class="res-item-when">Friday morning</span>
+                        </div>
+                        <a href="https://visit.911memorial.org" target="_blank">Tickets</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DAY 1 -->
+            <section class="day" id="day1">
+                <div class="day-header">
+                    <span class="day-number">01</span>
+                    <div class="day-info">
+                        <span class="day-date">Tuesday, January 14</span>
+                        <h2 class="day-title">Arrival</h2>
+                    </div>
+                </div>
+                <div class="timeline">
+                    <div class="time-section">
+                        <span class="time-section-label">Evening</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="activity">
+                        <span class="event-time">PM</span>
+                        <div class="event-card">
+                            <div class="event-label">Check-in</div>
+                            <div class="event-name">Arrive & Explore</div>
+                            <p class="tips">Check into the hotel, then take a short evening walk around Freeman Alley and Rivington Street to get your bearings.</p>
+                        </div>
+                    </div>
+                    <div class="event" data-type="food">
+                        <span class="event-time">Dinner</span>
+                        <div class="event-card">
+                            <div class="event-label">Dinner</div>
+                            <div class="event-name"><a href="https://cafemogador.squarespace.com/">Cafe Mogador</a></div>
+                            <div class="event-address"><a href="https://maps.google.com/?q=101+St+Marks+Pl,+New+York,+NY+10009">101 St Marks Pl, East Village</a></div>
+                            <div class="actions">
+                                <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=101+St+Marks+Pl,+New+York,+NY+10009&travelmode=walking">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    Directions
+                                </a>
+                            </div>
+                            <div class="tips"><strong>Moroccan spot since 1983.</strong> Walk-ins OK, 2hr window. Closes 10:30pm weekdays.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DAY 2 -->
+            <section class="day" id="day2">
+                <div class="day-header">
+                    <span class="day-number">02</span>
+                    <div class="day-info">
+                        <span class="day-date">Wednesday, January 15</span>
+                        <h2 class="day-title">Katz's + Brooklyn</h2>
+                    </div>
+                </div>
+                <div class="timeline">
+                    <div class="time-section">
+                        <span class="time-section-label">Morning</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="food">
+                        <span class="event-time">11:00</span>
+                        <div class="event-card">
+                            <div class="event-label">Brunch</div>
+                            <div class="event-name"><a href="https://katzsdelicatessen.com/">Katz's Delicatessen</a></div>
+                            <div class="event-address"><a href="https://maps.google.com/?q=205+E+Houston+St,+New+York,+NY+10002">205 E Houston St, LES</a></div>
+                            <div class="actions">
+                                <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=205+E+Houston+St,+New+York,+NY+10002&travelmode=walking">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    Directions
+                                </a>
+                            </div>
+                            <div class="tips"><strong>IMPORTANT:</strong> Get ticket at door. DON'T LOSE IT. Tip cutter $2-5 cash. Ask for "fatty" pastrami.</div>
+                        </div>
+                    </div>
+                    <div class="time-section">
+                        <span class="time-section-label">Afternoon</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="activity">
+                        <span class="event-time">1:30-4:00</span>
+                        <div class="event-card">
+                            <div class="event-label">Walking Tour</div>
+                            <div class="event-name">Brooklyn Bridge & DUMBO</div>
+                            <div class="event-address">Brooklyn Bridge → DUMBO → Brooklyn Heights Promenade</div>
+                            <div class="actions">
+                                <a class="action primary" href="https://maps.google.com/maps/dir/?api=1&origin=Brooklyn+Bridge&destination=Brooklyn+Heights+Promenade&travelmode=walking">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    Walking Route
+                                </a>
+                            </div>
+                            <div class="tips">Walk across the iconic bridge, explore DUMBO's cobblestone streets, end with stunning Manhattan views from the promenade.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DAY 3 -->
+            <section class="day" id="day3">
+                <div class="day-header">
+                    <span class="day-number">03</span>
+                    <div class="day-info">
+                        <span class="day-date">Thursday, January 16</span>
+                        <h2 class="day-title">SoHo & Hamilton</h2>
+                    </div>
+                </div>
+                <div class="timeline">
+                    <div class="time-section">
+                        <span class="time-section-label">Afternoon</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="activity">
+                        <span class="event-time">11-3</span>
+                        <div class="event-card">
+                            <div class="event-label">Wandering</div>
+                            <div class="event-name">SoHo & West Village</div>
+                            <div class="tips">Cast-iron architecture, boutique shopping, charming West Village streets. Go where the mood takes you.</div>
+                        </div>
+                    </div>
+                    <div class="time-section">
+                        <span class="time-section-label">Evening</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="entertainment">
+                        <span class="event-time">8:00</span>
+                        <div class="event-card">
+                            <div class="event-label">Show</div>
+                            <div class="event-name">Hamilton</div>
+                            <div class="event-address"><a href="https://maps.google.com/?q=226+W+46th+St,+New+York,+NY+10036">Richard Rodgers Theatre · 226 W 46th St</a></div>
+                            <div class="tips"><strong>Arrive by 7:20 PM.</strong> Show runs ~2h 45min. Ends ~10:45pm.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DAY 4 -->
+            <section class="day" id="day4">
+                <div class="day-header">
+                    <span class="day-number">04</span>
+                    <div class="day-info">
+                        <span class="day-date">Friday, January 17</span>
+                        <h2 class="day-title">WTC + Met + Jazz</h2>
+                    </div>
+                </div>
+                <div class="timeline">
+                    <div class="time-section">
+                        <span class="time-section-label">Morning</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="culture">
+                        <span class="event-time">10:00</span>
+                        <div class="event-card">
+                            <div class="event-label">~2 hours</div>
+                            <div class="event-name"><a href="https://www.911memorial.org/">9/11 Memorial & Museum</a></div>
+                            <div class="event-address"><a href="https://maps.google.com/?q=180+Greenwich+St,+New+York,+NY+10007">180 Greenwich St, WTC</a></div>
+                            <div class="tips"><strong>$38/person, less crowded early.</strong> Memorial (outdoor) is free.</div>
+                        </div>
+                    </div>
+                    <div class="time-section">
+                        <span class="time-section-label">Afternoon</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="culture">
+                        <span class="event-time">1:30-4:00</span>
+                        <div class="event-card">
+                            <div class="event-label">~2.5 hours</div>
+                            <div class="event-name"><a href="https://www.metmuseum.org/">The Metropolitan Museum of Art</a></div>
+                            <div class="event-address"><a href="https://maps.google.com/?q=1000+5th+Ave,+New+York,+NY+10028">1000 Fifth Ave at 82nd St</a></div>
+                            <div class="tips"><strong>$30 adults.</strong> Max 2-3 sections. Open til 9pm Fri!</div>
+                        </div>
+                    </div>
+                    <div class="time-section">
+                        <span class="time-section-label">Evening</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="food">
+                        <span class="event-time">6:30</span>
+                        <div class="event-card">
+                            <div class="event-label">Dinner - Reservation Required</div>
+                            <div class="event-name"><a href="https://resy.com/cities/ny/minetta-tavern">Minetta Tavern</a></div>
+                            <div class="event-address"><a href="https://maps.google.com/?q=113+MacDougal+St,+New+York,+NY+10012">113 MacDougal St, Greenwich Village</a></div>
+                            <div class="tips"><strong>RESERVATION REQUIRED.</strong> Book 30 days ahead on Resy.</div>
+                        </div>
+                    </div>
+                    <div class="event" data-type="entertainment">
+                        <span class="event-time">9:00</span>
+                        <div class="event-card">
+                            <div class="event-label">Jazz</div>
+                            <div class="event-name"><a href="https://villagevanguard.com/">Village Vanguard</a></div>
+                            <div class="event-address"><a href="https://maps.google.com/?q=178+7th+Ave+S,+New+York,+NY+10014">178 7th Ave S, Greenwich Village</a></div>
+                            <div class="tips"><strong>Legendary jazz since 1935.</strong> $30+ cover. Sets at 9pm & 11pm.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DAY 5 -->
+            <section class="day" id="day5">
+                <div class="day-header">
+                    <span class="day-number">05</span>
+                    <div class="day-info">
+                        <span class="day-date">Saturday, January 18</span>
+                        <h2 class="day-title">Departure</h2>
+                    </div>
+                </div>
+                <div class="timeline">
+                    <div class="time-section">
+                        <span class="time-section-label">Morning</span>
+                        <div class="time-section-line"></div>
+                    </div>
+                    <div class="event" data-type="food">
+                        <span class="event-time">AM</span>
+                        <div class="event-card">
+                            <div class="event-label">Coffee & Farewell</div>
+                            <div class="event-name"><a href="https://www.abraconyc.com/">Abraco</a></div>
+                            <div class="event-address"><a href="https://maps.google.com/?q=81+E+7th+St,+New+York,+NY+10003">81 E 7th St, East Village</a></div>
+                            <div class="tips"><strong>Tiny legendary coffee spot.</strong> Great pastries.</div>
+                        </div>
+                    </div>
+                    <div class="event" data-type="activity">
+                        <div class="event-card" style="background: linear-gradient(135deg, var(--gold-dim) 0%, var(--gold) 100%); border: none; color: var(--bg-deep);">
+                            <div class="event-name" style="color: var(--bg-deep);">Safe travels home!</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer Notes -->
+            <div class="footer-notes">
+                <div class="footer-note">
+                    <div class="footer-note-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <div>
+                        <h3>January Weather</h3>
+                        <p>Pack warm layers for bridge walks and Central Park. Expect 30-40°F (-1 to 4°C).</p>
+                    </div>
+                </div>
+                <div class="footer-note">
+                    <div class="footer-note-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12l6-6"/></svg>
+                    </div>
+                    <div>
+                        <h3>Food Strategy</h3>
+                        <p>One splurge (Katz's). Focus on pizza, bagels, Chinatown. Save budget for Texas BBQ.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========== EDITOR VIEW ========== -->
+    <div id="view-editor" class="view">
+        <div class="editor-container">
+            <div class="editor-toolbar">
+                <div class="editor-toolbar-left">
+                    <span class="editor-title">Itinerary</span>
+                    <span class="editor-status">
+                        <span id="editor-status-dot" class="editor-status-dot"></span>
+                        <span id="editor-status-text">Saved</span>
+                    </span>
+                </div>
+                <div class="editor-toolbar-right">
+                    <button id="preview-toggle" class="editor-btn" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        Preview
+                    </button>
+                    <button id="save-btn" class="editor-btn primary" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save
+                    </button>
+                </div>
+            </div>
+            <div class="editor-panes">
+                <div class="editor-pane editor-pane-main">
+                    <div class="editor-pane-header">Markdown</div>
+                    <textarea id="markdown-editor" placeholder="Loading itinerary..."></textarea>
+                </div>
+                <div class="editor-pane preview-pane">
+                    <div class="editor-pane-header">Preview</div>
+                    <div id="markdown-preview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== CHAT VIEW ========== -->
+    <div id="view-chat" class="view">
+        <div class="chat-container">
+            <div class="chat-header-full">
+                <div class="chat-header-icon-full">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <div class="chat-header-text">
+                    <h1>Trip Assistant</h1>
+                    <p>Ask anything about your NYC itinerary</p>
+                </div>
+            </div>
+            <div id="chat-messages" class="chat-messages-full">
+                <div class="chat-message-full assistant">
+                    <div class="chat-message-content-full">Hey! I'm your NYC trip assistant. Ask me about restaurants, directions, reservations, or anything about your Jan 14-18 itinerary.</div>
+                </div>
+            </div>
+            <form id="chat-form" class="chat-input-area-full">
+                <input type="text" id="chat-input" class="chat-input-full" placeholder="Ask about your trip..." autocomplete="off"/>
+                <button type="submit" id="chat-send" class="chat-send-full" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    // ========== ROUTER ==========
+    class Router {
+        constructor() {
+            this.views = ['calendar', 'editor', 'chat'];
+            this.currentView = 'calendar';
+            this.init();
+        }
+
+        init() {
+            this.handleRoute();
+            window.addEventListener('hashchange', () => this.handleRoute());
+            document.querySelectorAll('[data-view]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.hash = link.dataset.view;
+                });
+            });
+        }
+
+        handleRoute() {
+            const hash = window.location.hash.slice(1) || 'calendar';
+            const view = this.views.includes(hash) ? hash : 'calendar';
+            this.switchView(view);
+        }
+
+        switchView(view) {
+            // Hide all views
+            document.querySelectorAll('.view').forEach(v => {
+                v.classList.remove('active', 'visible');
+            });
+
+            // Show target view
+            const targetView = document.getElementById(`view-${view}`);
+            targetView.classList.add('active');
+
+            // Trigger animation
+            requestAnimationFrame(() => {
+                targetView.classList.add('visible');
+            });
+
+            // Update nav
+            document.querySelectorAll('[data-view]').forEach(link => {
+                link.classList.toggle('active', link.dataset.view === view);
+            });
+
+            this.currentView = view;
+
+            // View-specific actions
+            if (view === 'editor' && !window.editorLoaded) {
+                window.markdownEditor.load();
+            }
+            if (view === 'chat') {
+                document.getElementById('chat-input').focus();
+            }
+        }
+    }
+
+    // ========== TOAST NOTIFICATIONS ==========
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+
+        const icon = type === 'success'
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
+        toast.innerHTML = `${icon}<span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ========== MARKDOWN EDITOR ==========
+    class MarkdownEditor {
+        constructor() {
+            this.textarea = document.getElementById('markdown-editor');
+            this.preview = document.getElementById('markdown-preview');
+            this.saveBtn = document.getElementById('save-btn');
+            this.statusDot = document.getElementById('editor-status-dot');
+            this.statusText = document.getElementById('editor-status-text');
+            this.previewToggle = document.getElementById('preview-toggle');
+            this.originalContent = '';
+            this.hasChanges = false;
+            this.init();
+        }
+
+        init() {
+            this.textarea.addEventListener('input', () => {
+                this.hasChanges = this.textarea.value !== this.originalContent;
+                this.updateStatus();
+                this.updatePreview();
+            });
+
+            this.saveBtn.addEventListener('click', () => this.save());
+
+            // Mobile preview toggle
+            if (window.innerWidth <= 768) {
+                this.previewToggle.style.display = 'flex';
+                this.previewToggle.addEventListener('click', () => this.togglePreview());
+            }
+
+            window.addEventListener('beforeunload', (e) => {
+                if (this.hasChanges) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+
+            // Ctrl/Cmd+S to save
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    if (this.hasChanges) this.save();
+                }
+            });
+        }
+
+        async load() {
+            try {
+                this.textarea.placeholder = 'Loading...';
+                const response = await fetch('/api/itinerary');
+                const { content } = await response.json();
+                this.textarea.value = content;
+                this.originalContent = content;
+                this.hasChanges = false;
+                this.updateStatus();
+                this.updatePreview();
+                window.editorLoaded = true;
+            } catch (err) {
+                console.error('Failed to load itinerary:', err);
+                this.textarea.placeholder = 'Failed to load. Please refresh.';
+                showToast('Failed to load itinerary', 'error');
+            }
+        }
+
+        async save() {
+            if (!this.hasChanges) return;
+
+            this.saveBtn.disabled = true;
+            this.statusText.textContent = 'Saving...';
+
+            try {
+                const response = await fetch('/api/itinerary', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: this.textarea.value })
+                });
+
+                if (!response.ok) throw new Error('Save failed');
+
+                this.originalContent = this.textarea.value;
+                this.hasChanges = false;
+                this.updateStatus();
+                showToast('Itinerary saved successfully');
+            } catch (err) {
+                console.error('Save error:', err);
+                showToast('Failed to save. Please try again.', 'error');
+            } finally {
+                this.saveBtn.disabled = !this.hasChanges;
+            }
+        }
+
+        updateStatus() {
+            this.saveBtn.disabled = !this.hasChanges;
+            this.statusDot.classList.toggle('unsaved', this.hasChanges);
+            this.statusText.textContent = this.hasChanges ? 'Unsaved changes' : 'Saved';
+        }
+
+        togglePreview() {
+            const editorPane = document.querySelector('.editor-pane-main');
+            const previewPane = document.querySelector('.preview-pane');
+            const isShowingPreview = previewPane.classList.contains('show');
+
+            if (isShowingPreview) {
+                previewPane.classList.remove('show');
+                editorPane.classList.remove('hidden');
+                this.previewToggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Preview';
+            } else {
+                previewPane.classList.add('show');
+                editorPane.classList.add('hidden');
+                this.updatePreview();
+                this.previewToggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>Edit';
+            }
+        }
+
+        updatePreview() {
+            this.preview.innerHTML = this.renderMarkdown(this.textarea.value);
+        }
+
+        renderMarkdown(md) {
+            return md
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/^\* (.*$)/gim, '<li>$1</li>')
+                .replace(/^- (.*$)/gim, '<li>$1</li>')
+                .replace(/\*\*([^*]+)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/gim, '<em>$1</em>')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank">$1</a>')
+                .replace(/^---$/gim, '<hr>')
+                .replace(/\n\n/gim, '</p><p>')
+                .replace(/\n/gim, '<br>')
+                .replace(/^(.*)$/gim, (match) => {
+                    if (match.startsWith('<')) return match;
+                    return match;
+                });
+        }
+    }
+
+    // ========== CHAT ==========
+    class ChatAgent {
+        constructor() {
+            this.messagesEl = document.getElementById('chat-messages');
+            this.inputEl = document.getElementById('chat-input');
+            this.sendBtn = document.getElementById('chat-send');
+            this.form = document.getElementById('chat-form');
+            this.isLoading = false;
+            this.init();
+        }
+
+        init() {
+            this.form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.sendMessage(this.inputEl.value);
+            });
+        }
+
+        async sendMessage(message) {
+            if (this.isLoading || !message.trim()) return;
+
+            this.isLoading = true;
+            this.sendBtn.disabled = true;
+
+            this.addMessage(message, 'user');
+            this.inputEl.value = '';
+            this.showTyping();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                this.hideTyping();
+
+                if (!response.ok) {
+                    this.addMessage(data.error || 'Something went wrong.', 'assistant');
+                } else {
+                    this.addMessage(data.response, 'assistant');
+                }
+            } catch (err) {
+                this.hideTyping();
+                this.addMessage('Connection error. Please try again.', 'assistant');
+            } finally {
+                this.isLoading = false;
+                this.sendBtn.disabled = false;
+                this.inputEl.focus();
+            }
+        }
+
+        linkify(text) {
+            text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            text = text.replace(/(^|[^"'])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank">$2</a>');
+            return text;
+        }
+
+        addMessage(content, role) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message-full ${role}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'chat-message-content-full';
+            contentDiv.innerHTML = this.linkify(content);
+
+            messageDiv.appendChild(contentDiv);
+            this.messagesEl.appendChild(messageDiv);
+            this.scrollToBottom();
+
+            return messageDiv;
+        }
+
+        showTyping() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message-full assistant typing';
+            typingDiv.id = 'typing-indicator';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'chat-message-content-full';
+            contentDiv.innerHTML = `
+                <span class="typing-dot-full"></span>
+                <span class="typing-dot-full"></span>
+                <span class="typing-dot-full"></span>
+            `;
+
+            typingDiv.appendChild(contentDiv);
+            this.messagesEl.appendChild(typingDiv);
+            this.scrollToBottom();
+        }
+
+        hideTyping() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        }
+
+        scrollToBottom() {
+            this.messagesEl.scrollTo({
+                top: this.messagesEl.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }
+
+    // ========== CALENDAR DAY NAV ==========
+    function initCalendarNav() {
+        const sections = document.querySelectorAll('.day');
+        const navLinks = document.querySelectorAll('.day-nav a');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+        sections.forEach(section => observer.observe(section));
+    }
+
+    // ========== INIT ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        window.router = new Router();
+        window.markdownEditor = new MarkdownEditor();
+        window.chatAgent = new ChatAgent();
+        initCalendarNav();
+    });
+    </script>
+</body>
+</html>
