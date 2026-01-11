@@ -412,6 +412,11 @@
             max-width: 180px;
         }
 
+        .event-hook.needs-details {
+            color: var(--text-tertiary, #999);
+            opacity: 0.7;
+        }
+
         @media (max-width: 600px) {
             .event-hook {
                 display: none;
@@ -2020,6 +2025,7 @@
             ].filter(Boolean).join(' ');
 
             const hook = place?.hook || '';
+            const needsDetails = place?.needsDetails || false;
 
             return `
             <div class="${rowClasses}" data-event="${index}">
@@ -2027,7 +2033,7 @@
                     <span class="event-type-dot ${typeClass}"></span>
                     <span class="event-time">${this.formatTime(item.time) || ''}</span>
                     <span class="event-name">${this.escapeHtml(name)}</span>
-                    ${hook ? `<span class="event-hook">${this.escapeHtml(hook)}</span>` : ''}
+                    ${hook ? `<span class="event-hook${needsDetails ? ' needs-details' : ''}">${this.escapeHtml(hook)}</span>` : ''}
                     ${badgeHtml}
                     ${neighborhood ? `<span class="event-neighborhood">${neighborhood}</span>` : ''}
                     <button class="event-edit-icon" data-action="edit" data-index="${index}" aria-label="Edit event">
