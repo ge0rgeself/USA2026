@@ -350,6 +350,8 @@
             overflow: hidden;
             cursor: pointer;
             transition: all 0.2s ease;
+            touch-action: manipulation;  /* Removes 300ms tap delay, prevents double-tap zoom */
+            -webkit-tap-highlight-color: transparent;  /* Removes blue tap flash on iOS */
         }
 
         .event-row:hover {
@@ -1144,12 +1146,12 @@
         /* Single-line edit input */
         .event-edit-single {
             width: 100%;
-            padding: 14px 16px;
+            padding: 2px 0;  /* Reduced since wrapper has padding now */
             border: none;
             background: transparent;
             color: var(--text-primary);
             font-family: inherit;
-            font-size: 15px;
+            font-size: 16px;  /* iOS auto-zooms inputs below 16px */
             outline: none;
         }
 
@@ -1167,8 +1169,9 @@
         .event-row.editing .event-edit-wrapper {
             display: flex;
             align-items: center;
-            padding: 2px 8px 2px 16px;
+            padding: 12px 16px;  /* Match collapsed row padding for stable layout */
             gap: 8px;
+            min-height: var(--event-row-height);  /* Maintain consistent height */
         }
 
         .event-edit-delete-inline {
@@ -1748,7 +1751,9 @@
                         this.toggleEvent(index);
                         return;
                     }
-                    // Otherwise, enter edit mode
+                    // Prevent event from bubbling (fixes mobile double-fire issue)
+                    e.stopPropagation();
+                    // Enter edit mode
                     this.startEdit(index);
                 });
             });
@@ -2127,9 +2132,16 @@
         }
 
         startEdit(index) {
+            // Guard against re-entry from same touch/click event cycle
+            if (this._startingEdit) return;
+            this._startingEdit = true;
+
             this.editingEvent = index;
             this.expandedEvent = null;
             this.render();
+
+            // Reset after event loop completes
+            requestAnimationFrame(() => { this._startingEdit = false; });
         }
 
         cancelEdit() {
