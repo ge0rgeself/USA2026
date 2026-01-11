@@ -2033,9 +2033,9 @@
             try {
                 this.textarea.placeholder = 'Loading...';
                 const response = await fetch('/api/itinerary');
-                const { content } = await response.json();
-                this.textarea.value = content;
-                this.originalContent = content;
+                const { txt } = await response.json();
+                this.textarea.value = txt;
+                this.originalContent = txt;
                 this.hasChanges = false;
                 this.updateStatus();
                 this.updatePreview();
@@ -2051,7 +2051,7 @@
             if (!this.hasChanges) return;
 
             this.saveBtn.disabled = true;
-            this.statusText.textContent = 'Saving...';
+            this.statusText.textContent = 'Saving & enriching...';
 
             try {
                 const response = await fetch('/api/itinerary', {
@@ -2062,10 +2062,16 @@
 
                 if (!response.ok) throw new Error('Save failed');
 
+                const { json } = await response.json();
+
                 this.originalContent = this.textarea.value;
                 this.hasChanges = false;
                 this.updateStatus();
-                showToast('Itinerary saved successfully');
+
+                // Broadcast update to calendar
+                window.dispatchEvent(new CustomEvent('itinerary-updated', { detail: json }));
+
+                showToast('Itinerary saved and enriched');
             } catch (err) {
                 console.error('Save error:', err);
                 showToast('Failed to save. Please try again.', 'error');
