@@ -238,6 +238,11 @@ app.post('/api/chat', requireAuth, async (req, res) => {
   }
 });
 
+app.post('/api/chat/clear', requireAuth, (req, res) => {
+  req.session.chatHistory = [];
+  res.json({ success: true });
+});
+
 // Chat-initiated itinerary update
 app.post('/api/itinerary/chat-update', requireAuth, async (req, res) => {
   try {
