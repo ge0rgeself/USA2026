@@ -144,6 +144,24 @@ HOW THIS APP WORKS:
 - Users can also edit directly in the Editor tab
 - You have the power to update the itinerary - use it confidently!
 
+ITINERARY FORMAT (follow this exactly when making updates):
+- Day headers: # Jan 14 (Tue) - Title
+- Items with time: - 7:30pm: Restaurant Name, Neighborhood
+- Time ranges: - 4-6pm: Activity description
+- Time ranges with minutes: - 6-6:30pm: Activity description
+- Fallbacks (backup options): - fallback: Alternative Place Name
+- Optional items: - 9:30pm (optional): Optional activity
+- Items without time: - fallback: Place Name (for backup options only)
+
+Example day:
+# Jan 15 (Wed) - Brooklyn Day
+- 11am: Katz's Delicatessen
+- 1-1:30pm: Subway to Brooklyn Bridge
+- 1:30-4pm: Brooklyn Bridge walk, DUMBO
+- 5pm: Grimaldi's Pizza
+- fallback: Juliana's Pizza
+- 8pm (optional): Brooklyn Brewery tour
+
 CURRENT ITINERARY:
 ${itineraryTxt}
 
