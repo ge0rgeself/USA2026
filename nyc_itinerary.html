@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Jan 14-18 | Your Trip Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0f0d0a;
+            --bg-main: #1a1814;
+            --bg-card: #252219;
+            --bg-elevated: #2d2a22;
+            --gold: #d4a574;
+            --gold-light: #e8c9a4;
+            --gold-dim: #9a7a54;
+            --cream: #f5f0e8;
+            --cream-dim: #b8b0a4;
+            --coral: #e07a5f;
+            --teal: #5fa8a0;
+            --violet: #9d8ec9;
+            --sage: #7d9a78;
+            --timeline-line: #3d382e;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --shadow-lg: 0 12px 48px rgba(0,0,0,0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: var(--cream);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-main) 100%);
+            padding: 60px 24px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(212, 165, 116, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(212, 165, 116, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-eyebrow {
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 16px;
+            font-weight: 600;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(48px, 12vw, 96px);
+            font-weight: 400;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 0.1s forwards;
+        }
+
+        .hero-dates {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px;
+            color: var(--cream-dim);
+            margin-bottom: 32px;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 0.2s forwards;
+        }
+
+        .hero-hotel {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 14px 24px;
+            border-radius: 100px;
+            border: 1px solid var(--timeline-line);
+            text-decoration: none;
+            color: var(--cream);
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 0.3s forwards;
+        }
+
+        .hero-hotel:hover {
+            background: var(--bg-elevated);
+            border-color: var(--gold-dim);
+            transform: translateY(-2px);
+        }
+
+        .hero-hotel svg {
+            width: 18px;
+            height: 18px;
+            color: var(--gold);
+        }
+
+        .hero-hotel span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Day Navigation */
+        .day-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(180deg, var(--bg-main) 0%, rgba(26, 24, 20, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--timeline-line);
+            padding: 0 24px;
+        }
+
+        .day-nav-inner {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 16px 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .day-nav-inner::-webkit-scrollbar {
+            display: none;
+        }
+
+        .day-nav a {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--cream-dim);
+            transition: all 0.3s ease;
+            min-width: 80px;
+        }
+
+        .day-nav a:hover {
+            background: var(--bg-card);
+            color: var(--cream);
+        }
+
+        .day-nav a .day-num {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 24px;
+            font-weight: 500;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .day-nav a .day-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .day-nav a.active {
+            background: var(--bg-card);
+            border-color: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        /* Main Content */
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px 100px;
+        }
+
+        /* Reservations Box */
+        .reservations {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(212, 165, 116, 0.02) 100%);
+            border: 1px solid var(--gold-dim);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 48px;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 0.4s forwards;
+        }
+
+        .reservations-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .reservations-header svg {
+            width: 20px;
+            height: 20px;
+            color: var(--gold);
+        }
+
+        .reservations h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--gold-light);
+        }
+
+        .res-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .res-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--timeline-line);
+        }
+
+        .res-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .res-item-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .res-item-when {
+            font-size: 12px;
+            color: var(--cream-dim);
+        }
+
+        .res-item a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--gold);
+            color: var(--bg-deep);
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+
+        .res-item a:hover {
+            background: var(--gold-light);
+            transform: translateY(-1px);
+        }
+
+        /* Day Section */
+        .day {
+            margin-bottom: 64px;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .day:nth-child(1) { animation-delay: 0.5s; }
+        .day:nth-child(2) { animation-delay: 0.55s; }
+        .day:nth-child(3) { animation-delay: 0.6s; }
+        .day:nth-child(4) { animation-delay: 0.65s; }
+        .day:nth-child(5) { animation-delay: 0.7s; }
+
+        .day-header {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--timeline-line);
+        }
+
+        .day-number {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 64px;
+            font-weight: 400;
+            color: var(--gold);
+            line-height: 1;
+            opacity: 0.7;
+        }
+
+        .day-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .day-date {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--cream-dim);
+            margin-bottom: 4px;
+        }
+
+        .day-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 28px;
+            font-weight: 500;
+            color: var(--cream);
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 80px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 28px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background: linear-gradient(180deg, var(--timeline-line) 0%, transparent 100%);
+            border-radius: 1px;
+        }
+
+        /* Timeline Event */
+        .event {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .event::before {
+            content: '';
+            position: absolute;
+            left: -52px;
+            top: 24px;
+            width: 12px;
+            height: 12px;
+            background: var(--bg-main);
+            border: 2px solid var(--timeline-line);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .event:hover::before {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 4px rgba(212, 165, 116, 0.2);
+        }
+
+        .event-time {
+            position: absolute;
+            left: -80px;
+            top: 20px;
+            width: 60px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gold);
+            letter-spacing: 0.5px;
+        }
+
+        .event-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--timeline-line);
+            transition: all 0.3s ease;
+        }
+
+        .event:hover .event-card {
+            border-color: var(--gold-dim);
+            transform: translateX(4px);
+            box-shadow: var(--shadow);
+        }
+
+        /* Event Types */
+        .event[data-type="food"] .event-card { border-left: 3px solid var(--coral); }
+        .event[data-type="food"]::before { border-color: var(--coral); }
+        .event[data-type="food"] .event-time { color: var(--coral); }
+
+        .event[data-type="culture"] .event-card { border-left: 3px solid var(--teal); }
+        .event[data-type="culture"]::before { border-color: var(--teal); }
+        .event[data-type="culture"] .event-time { color: var(--teal); }
+
+        .event[data-type="entertainment"] .event-card { border-left: 3px solid var(--violet); }
+        .event[data-type="entertainment"]::before { border-color: var(--violet); }
+        .event[data-type="entertainment"] .event-time { color: var(--violet); }
+
+        .event[data-type="activity"] .event-card { border-left: 3px solid var(--sage); }
+        .event[data-type="activity"]::before { border-color: var(--sage); }
+        .event[data-type="activity"] .event-time { color: var(--sage); }
+
+        .event[data-type="transit"] .event-card {
+            background: transparent;
+            border: 1px dashed var(--timeline-line);
+            padding: 14px 20px;
+        }
+
+        .event[data-type="transit"]::before {
+            width: 8px;
+            height: 8px;
+            left: -50px;
+            top: 18px;
+            background: var(--timeline-line);
+            border: none;
+        }
+
+        .event.fallback .event-card {
+            opacity: 0.6;
+            border-style: dashed;
+        }
+
+        .event.fallback .event-label::before {
+            content: 'Fallback: ';
+            color: var(--cream-dim);
+            font-weight: 400;
+        }
+
+        /* Event Content */
+        .event-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .event-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--cream-dim);
+            margin-bottom: 4px;
+        }
+
+        .event-name {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .event-name a {
+            color: var(--cream);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .event-name a:hover {
+            color: var(--gold);
+        }
+
+        .event-address {
+            font-size: 13px;
+            color: var(--cream-dim);
+            margin-bottom: 16px;
+        }
+
+        .event-address a {
+            color: var(--cream-dim);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .event-address a:hover {
+            color: var(--gold);
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--timeline-line);
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--cream);
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .action:hover {
+            background: var(--bg-main);
+            border-color: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        .action svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        .action:hover svg {
+            opacity: 1;
+        }
+
+        .action.primary {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: var(--bg-deep);
+        }
+
+        .action.primary:hover {
+            background: var(--gold-light);
+            border-color: var(--gold-light);
+            color: var(--bg-deep);
+        }
+
+        /* Tips */
+        .tips {
+            background: var(--bg-main);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--cream-dim);
+            line-height: 1.6;
+        }
+
+        .tips strong {
+            color: var(--cream);
+            font-weight: 600;
+        }
+
+        .tips ul {
+            margin: 10px 0 0 18px;
+        }
+
+        .tips li {
+            margin-bottom: 4px;
+        }
+
+        /* Transit Note */
+        .transit-text {
+            font-size: 14px;
+            color: var(--cream-dim);
+        }
+
+        .transit-text strong {
+            color: var(--cream);
+        }
+
+        /* Section Dividers */
+        .time-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 32px 0 24px;
+            padding-left: 0;
+        }
+
+        .time-section::before {
+            display: none;
+        }
+
+        .time-section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--gold-dim);
+            white-space: nowrap;
+        }
+
+        .time-section-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--timeline-line), transparent);
+        }
+
+        /* Footer Notes */
+        .footer-notes {
+            margin-top: 64px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .footer-note {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--timeline-line);
+            display: flex;
+            gap: 16px;
+        }
+
+        .footer-note-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .footer-note-icon svg {
+            width: 20px;
+            height: 20px;
+            color: var(--gold);
+        }
+
+        .footer-note h3 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .footer-note p {
+            font-size: 14px;
+            color: var(--cream-dim);
+            line-height: 1.6;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 640px) {
+            .hero {
+                padding: 48px 20px 32px;
+            }
+
+            .hero h1 {
+                font-size: 56px;
+            }
+
+            .day-nav {
+                padding: 0 16px;
+            }
+
+            main {
+                padding: 32px 16px 80px;
+            }
+
+            .timeline {
+                padding-left: 0;
+            }
+
+            .timeline::before {
+                display: none;
+            }
+
+            .event::before {
+                display: none;
+            }
+
+            .event-time {
+                position: static;
+                width: auto;
+                text-align: left;
+                margin-bottom: 8px;
+                font-size: 11px;
+            }
+
+            .day-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .day-number {
+                font-size: 48px;
+            }
+
+            .reservations {
+                padding: 20px;
+            }
+
+            .res-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .footer-note {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+
+        /* Scroll animations */
+        .day {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .day.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        /* Chat Widget */
+        .chat-widget {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .chat-toggle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+            color: var(--bg-deep);
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(212, 165, 116, 0.3), var(--shadow);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1001;
+        }
+
+        .chat-toggle:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 24px rgba(212, 165, 116, 0.4), var(--shadow-lg);
+        }
+
+        .chat-toggle svg {
+            width: 24px;
+            height: 24px;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .chat-toggle .chat-icon-close {
+            position: absolute;
+            opacity: 0;
+            transform: rotate(-90deg);
+        }
+
+        .chat-widget.open .chat-toggle .chat-icon-open {
+            opacity: 0;
+            transform: rotate(90deg);
+        }
+
+        .chat-widget.open .chat-toggle .chat-icon-close {
+            opacity: 1;
+            transform: rotate(0deg);
+        }
+
+        .chat-panel {
+            position: absolute;
+            bottom: 72px;
+            right: 0;
+            width: 360px;
+            height: 480px;
+            background: var(--bg-card);
+            border: 1px solid var(--timeline-line);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(16px) scale(0.95);
+            transform-origin: bottom right;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chat-widget.open .chat-panel {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--timeline-line);
+        }
+
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-header-icon svg {
+            width: 18px;
+            height: 18px;
+            color: var(--bg-deep);
+        }
+
+        .chat-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--cream);
+            margin: 0;
+        }
+
+        .chat-subtitle {
+            font-size: 12px;
+            color: var(--cream-dim);
+        }
+
+        .chat-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--cream-dim);
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .chat-close:hover {
+            background: var(--bg-card);
+            color: var(--cream);
+        }
+
+        .chat-close svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: var(--bg-main);
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--timeline-line);
+            border-radius: 3px;
+        }
+
+        .chat-message {
+            display: flex;
+            max-width: 85%;
+            animation: messageSlide 0.3s ease forwards;
+        }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-message.user {
+            align-self: flex-end;
+        }
+
+        .chat-message.assistant {
+            align-self: flex-start;
+        }
+
+        .chat-message-content {
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .chat-message-content a {
+            color: var(--gold);
+            text-decoration: underline;
+        }
+
+        .chat-message.user .chat-message-content {
+            background: var(--gold);
+            color: var(--bg-deep);
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.user .chat-message-content a {
+            color: var(--bg-deep);
+        }
+
+        .chat-message.assistant .chat-message-content {
+            background: var(--bg-card);
+            color: var(--cream);
+            border: 1px solid var(--timeline-line);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-message.typing .chat-message-content {
+            display: flex;
+            gap: 4px;
+            padding: 16px 20px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--gold-dim);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+            padding: 16px;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--timeline-line);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--timeline-line);
+            border-radius: 12px;
+            color: var(--cream);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .chat-input::placeholder {
+            color: var(--cream-dim);
+        }
+
+        .chat-input:focus {
+            border-color: var(--gold-dim);
+        }
+
+        .chat-send {
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: var(--gold);
+            color: var(--bg-deep);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .chat-send:hover {
+            background: var(--gold-light);
+            transform: scale(1.05);
+        }
+
+        .chat-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-send svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        @media (max-width: 640px) {
+            .chat-widget {
+                bottom: 16px;
+                right: 16px;
+            }
+
+            .chat-panel {
+                position: fixed;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                width: 100%;
+                height: 85vh;
+                max-height: 85vh;
+                border-radius: 20px 20px 0 0;
+                transform: translateY(100%);
+            }
+
+            .chat-widget.open .chat-panel {
+                transform: translateY(0);
+            }
+
+            .chat-toggle {
+                width: 52px;
+                height: 52px;
+            }
+
+            .chat-messages {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero -->
+    <header class="hero">
+        <p class="hero-eyebrow">Your NYC Adventure</p>
+        <h1>New York</h1>
+        <p class="hero-dates">January 14 - 18, 2025</p>
+        <a class="hero-hotel" href="https://maps.google.com/?q=3+Freeman+Alley,+New+York,+NY+10002" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Untitled at 3 Freeman Alley &middot; Lower East Side</span>
+        </a>
+    </header>
+
+    <!-- Day Navigation -->
+    <nav class="day-nav">
+        <div class="day-nav-inner">
+            <a href="#day1" class="active">
+                <span class="day-num">14</span>
+                <span class="day-label">Tue</span>
+            </a>
+            <a href="#day2">
+                <span class="day-num">15</span>
+                <span class="day-label">Wed</span>
+            </a>
+            <a href="#day3">
+                <span class="day-num">16</span>
+                <span class="day-label">Thu</span>
+            </a>
+            <a href="#day4">
+                <span class="day-num">17</span>
+                <span class="day-label">Fri</span>
+            </a>
+            <a href="#day5">
+                <span class="day-num">18</span>
+                <span class="day-label">Sat</span>
+            </a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Reservations -->
+        <div class="reservations">
+            <div class="reservations-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <h2>Book Ahead</h2>
+            </div>
+            <div class="res-grid">
+                <div class="res-item">
+                    <div class="res-item-info">
+                        <span class="res-item-name">Minetta Tavern</span>
+                        <span class="res-item-when">Friday dinner</span>
+                    </div>
+                    <a href="https://resy.com/cities/ny/minetta-tavern" target="_blank">Resy</a>
+                </div>
+                <div class="res-item">
+                    <div class="res-item-info">
+                        <span class="res-item-name">Village Vanguard</span>
+                        <span class="res-item-when">Friday jazz</span>
+                    </div>
+                    <a href="https://villagevanguard.com" target="_blank">Book</a>
+                </div>
+                <div class="res-item">
+                    <div class="res-item-info">
+                        <span class="res-item-name">Tenement Museum</span>
+                        <span class="res-item-when">Thursday optional</span>
+                    </div>
+                    <a href="https://tickets.tenement.org" target="_blank">Tickets</a>
+                </div>
+                <div class="res-item">
+                    <div class="res-item-info">
+                        <span class="res-item-name">9/11 Museum</span>
+                        <span class="res-item-when">Friday morning</span>
+                    </div>
+                    <a href="https://visit.911memorial.org" target="_blank">Tickets</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 1 -->
+        <section class="day" id="day1">
+            <div class="day-header">
+                <span class="day-number">01</span>
+                <div class="day-info">
+                    <span class="day-date">Tuesday, January 14</span>
+                    <h2 class="day-title">Arrival</h2>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <div class="time-section">
+                    <span class="time-section-label">Evening</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="activity">
+                    <span class="event-time">PM</span>
+                    <div class="event-card">
+                        <div class="event-label">Check-in</div>
+                        <div class="event-name">Arrive & Explore</div>
+                        <p class="tips">Check into the hotel, then take a short evening walk around Freeman Alley and Rivington Street to get your bearings.</p>
+                    </div>
+                </div>
+
+                <div class="event" data-type="food">
+                    <span class="event-time">Dinner</span>
+                    <div class="event-card">
+                        <div class="event-label">Dinner</div>
+                        <div class="event-name"><a href="https://cafemogador.squarespace.com/">Cafe Mogador</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=101+St+Marks+Pl,+New+York,+NY+10009">101 St Marks Pl, East Village</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=101+St+Marks+Pl,+New+York,+NY+10009&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                            <a class="action" href="tel:+12126772226">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                Call
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>Moroccan spot since 1983.</strong> Walk-ins OK, 2hr window. Closes 10:30pm weekdays.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event fallback" data-type="food">
+                    <span class="event-time">Alt</span>
+                    <div class="event-card">
+                        <div class="event-label">Russ & Daughters Cafe</div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=127+Orchard+St,+New+York,+NY+10002">127 Orchard St, LES</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=127+Orchard+St,+New+York,+NY+10002&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>NYC institution since 1914.</strong> Walk-in only. Mon-Thu closes 2:30pm.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="entertainment">
+                    <span class="event-time">Optional</span>
+                    <div class="event-card">
+                        <div class="event-label">Nightcap</div>
+                        <div class="event-name"><a href="#">McSorley's Old Ale House</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=15+E+7th+St,+New+York,+NY+10003">15 E 7th St, East Village</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=15+E+7th+St,+New+York,+NY+10003&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>NYC's oldest bar (1854).</strong> Cash only. One drink, then sleep by 9:30pm.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DAY 2 -->
+        <section class="day" id="day2">
+            <div class="day-header">
+                <span class="day-number">02</span>
+                <div class="day-info">
+                    <span class="day-date">Wednesday, January 15</span>
+                    <h2 class="day-title">Katz's + Brooklyn</h2>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <div class="time-section">
+                    <span class="time-section-label">Morning</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="food">
+                    <span class="event-time">AM</span>
+                    <div class="event-card">
+                        <div class="event-label">Breakfast</div>
+                        <div class="event-name"><a href="https://www.tompkinssquarebagels.com/">Tompkins Square Bagels</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=165+Avenue+A,+New+York,+NY+10009">165 Avenue A, East Village</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=165+Avenue+A,+New+York,+NY+10009&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                        </div>
+                        <div class="tips">
+                            Hand-rolled, kettle-boiled. Opens 6am weekdays. Or grab coffee + pastry at hotel.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="food">
+                    <span class="event-time">11:00</span>
+                    <div class="event-card">
+                        <div class="event-label">Brunch</div>
+                        <div class="event-name"><a href="https://katzsdelicatessen.com/">Katz's Delicatessen</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=205+E+Houston+St,+New+York,+NY+10002">205 E Houston St, LES</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=205+E+Houston+St,+New+York,+NY+10002&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                            <a class="action" href="https://katzsdelicatessen.com/" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                Website
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>IMPORTANT:</strong>
+                            <ul>
+                                <li>Get ticket at door. DON'T LOSE IT ($50 fee!)</li>
+                                <li>Tip cutter $2-5 cash</li>
+                                <li>Ask for "fatty" pastrami</li>
+                                <li>Share 1 pastrami + 1 side</li>
+                            </ul>
+                            Since 1888. Open Mon-Thu 8am-11pm, 24hrs Fri-Sun.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="time-section">
+                    <span class="time-section-label">Afternoon</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="transit">
+                    <span class="event-time">1:00</span>
+                    <div class="event-card">
+                        <p class="transit-text"><strong>Subway to Brooklyn Bridge</strong> &middot; High St station (A/C train)</p>
+                    </div>
+                </div>
+
+                <div class="event" data-type="activity">
+                    <span class="event-time">1:30-4:00</span>
+                    <div class="event-card">
+                        <div class="event-label">Walking Tour</div>
+                        <div class="event-name">Brooklyn Bridge & DUMBO</div>
+                        <div class="event-address">Brooklyn Bridge &rarr; DUMBO &rarr; Brooklyn Heights Promenade</div>
+                        <div class="actions">
+                            <a class="action primary" href="https://maps.google.com/maps/dir/?api=1&origin=Brooklyn+Bridge&destination=Brooklyn+Heights+Promenade&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Walking Route
+                            </a>
+                        </div>
+                        <div class="tips">
+                            Walk across the iconic bridge, explore DUMBO's cobblestone streets, end with stunning Manhattan views from the promenade.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="transit">
+                    <span class="event-time">~4:30</span>
+                    <div class="event-card">
+                        <p class="transit-text">Walk back across bridge or take subway back to Manhattan</p>
+                    </div>
+                </div>
+
+                <div class="time-section">
+                    <span class="time-section-label">Evening</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="food">
+                    <span class="event-time">~5:00</span>
+                    <div class="event-card">
+                        <div class="event-label">Dinner</div>
+                        <div class="event-name"><a href="https://www.joespizzanyc.com/">Joe's Pizza - Fulton St</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=124+Fulton+St,+New+York,+NY+10038">124 Fulton St, Financial District</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=124+Fulton+St,+New+York,+NY+10038&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>Classic NYC slice since 1975.</strong> 5 min from Brooklyn Bridge. Open late (til 3-5am).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DAY 3 -->
+        <section class="day" id="day3">
+            <div class="day-header">
+                <span class="day-number">03</span>
+                <div class="day-info">
+                    <span class="day-date">Thursday, January 16</span>
+                    <h2 class="day-title">SoHo & Hamilton</h2>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <div class="time-section">
+                    <span class="time-section-label">Morning</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="activity">
+                    <span class="event-time">AM</span>
+                    <div class="event-card">
+                        <div class="event-label">Relaxed Start</div>
+                        <div class="event-name">Sleep In</div>
+                        <div class="tips">
+                            Take it easy. Coffee + pastry near the hotel when you're ready.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="time-section">
+                    <span class="time-section-label">Afternoon</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="activity">
+                    <span class="event-time">11-3</span>
+                    <div class="event-card">
+                        <div class="event-label">Wandering</div>
+                        <div class="event-name">SoHo & West Village</div>
+                        <div class="event-address">No agenda - just explore</div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/?q=SoHo,+New+York,+NY">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                SoHo Map
+                            </a>
+                        </div>
+                        <div class="tips">
+                            Cast-iron architecture, boutique shopping, charming West Village streets. Go where the mood takes you.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="culture">
+                    <span class="event-time">2:00</span>
+                    <div class="event-card">
+                        <div class="event-label">Optional</div>
+                        <div class="event-name"><a href="https://www.tenement.org/">Tenement Museum</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=103+Orchard+St,+New+York,+NY+10002">103 Orchard St, LES</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=103+Orchard+St,+New+York,+NY+10002&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                            <a class="action primary" href="https://tickets.tenement.org" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Book Tour
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>Guided tours only, ~1 hr.</strong> $30/person. Book ahead, max 15 people per tour.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="time-section">
+                    <span class="time-section-label">Evening</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="food">
+                    <span class="event-time">5:00</span>
+                    <div class="event-card">
+                        <div class="event-label">Early Dinner</div>
+                        <div class="event-name"><a href="#">Spicy Village</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=68+Forsyth+St,+New+York,+NY">68 Forsyth St, Chinatown</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=68+Forsyth+St,+New+York,+NY&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>Hand-pulled noodles, big spicy flavors.</strong> Cash preferred. Fallback: Taiwan Pork Chop House.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="transit">
+                    <span class="event-time">6:15</span>
+                    <div class="event-card">
+                        <p class="transit-text"><strong>Subway to Times Square</strong> &middot; 42nd St (N/Q/R/W or 1/2/3)</p>
+                    </div>
+                </div>
+
+                <div class="event" data-type="entertainment">
+                    <span class="event-time">8:00</span>
+                    <div class="event-card">
+                        <div class="event-label">Show</div>
+                        <div class="event-name"><a href="#">Hamilton</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=226+W+46th+St,+New+York,+NY+10036">Richard Rodgers Theatre &middot; 226 W 46th St</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=226+W+46th+St,+New+York,+NY+10036&travelmode=transit">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>Arrive by 7:20 PM.</strong> Show runs ~2h 45min. Ends ~10:45pm.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="entertainment">
+                    <span class="event-time">~10:45</span>
+                    <div class="event-card">
+                        <div class="event-label">Post-Show</div>
+                        <div class="event-name"><a href="https://www.ardesia-ny.com/">Ardesia Wine Bar</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=510+W+52nd+St,+New+York,+NY+10019">510 W 52nd St, Hell's Kitchen</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=510+W+52nd+St,+New+York,+NY+10019&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                        </div>
+                        <div class="tips">
+                            Cozy wine bar in Hell's Kitchen. Or just head back to the hotel if tired.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DAY 4 -->
+        <section class="day" id="day4">
+            <div class="day-header">
+                <span class="day-number">04</span>
+                <div class="day-info">
+                    <span class="day-date">Friday, January 17</span>
+                    <h2 class="day-title">WTC + Met + Jazz</h2>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <div class="time-section">
+                    <span class="time-section-label">Morning</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="activity">
+                    <span class="event-time">9:00</span>
+                    <div class="event-card">
+                        <div class="event-name">Coffee</div>
+                        <div class="tips">
+                            Near hotel or grab something near WTC on the way.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="culture">
+                    <span class="event-time">10:00</span>
+                    <div class="event-card">
+                        <div class="event-label">~2 hours</div>
+                        <div class="event-name"><a href="https://www.911memorial.org/">9/11 Memorial & Museum</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=180+Greenwich+St,+New+York,+NY+10007">180 Greenwich St, WTC</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=180+Greenwich+St,+New+York,+NY+10007&travelmode=transit">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                            <a class="action primary" href="https://visit.911memorial.org" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Tickets
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>$38/person, less crowded early.</strong> Memorial (outdoor) is free, 8am-8pm. Museum closed Tuesdays - Friday is perfect.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="time-section">
+                    <span class="time-section-label">Afternoon</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="transit">
+                    <span class="event-time">12:30</span>
+                    <div class="event-card">
+                        <p class="transit-text"><strong>Subway uptown</strong> &middot; Upper East Side (4/5/6 to 86th St)</p>
+                    </div>
+                </div>
+
+                <div class="event" data-type="food">
+                    <span class="event-time">1:00</span>
+                    <div class="event-card">
+                        <div class="event-name">Light Lunch</div>
+                        <div class="tips">
+                            Grab something quick near the Met before your museum visit.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="culture">
+                    <span class="event-time">1:30-4:00</span>
+                    <div class="event-card">
+                        <div class="event-label">~2.5 hours</div>
+                        <div class="event-name"><a href="https://www.metmuseum.org/">The Metropolitan Museum of Art</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=1000+5th+Ave,+New+York,+NY+10028">1000 Fifth Ave at 82nd St</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=1000+5th+Ave,+New+York,+NY+10028&travelmode=transit">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                            <a class="action" href="https://engage.metmuseum.org/admission" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Tickets
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>$30 adults. Pay-what-you-wish for NY/NJ/CT residents!</strong> Max 2-3 sections. Closed Wed - Friday is perfect. Open til 9pm Fri!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="activity">
+                    <span class="event-time">4:00</span>
+                    <div class="event-card">
+                        <div class="event-label">Walk</div>
+                        <div class="event-name">Central Park</div>
+                        <div class="event-address">The Mall &rarr; Bethesda Terrace &rarr; Bow Bridge</div>
+                        <div class="actions">
+                            <a class="action primary" href="https://maps.google.com/maps/dir/?api=1&origin=The+Met+Fifth+Avenue&destination=Bow+Bridge+Central+Park&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Walking Route
+                            </a>
+                        </div>
+                        <div class="tips">
+                            Winter in Central Park. Bundle up for this classic NYC experience.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="transit">
+                    <span class="event-time">5:30</span>
+                    <div class="event-card">
+                        <p class="transit-text">Head to Greenwich Village for dinner</p>
+                    </div>
+                </div>
+
+                <div class="time-section">
+                    <span class="time-section-label">Evening</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="food">
+                    <span class="event-time">6:30</span>
+                    <div class="event-card">
+                        <div class="event-label">Dinner - Reservation Required</div>
+                        <div class="event-name"><a href="https://resy.com/cities/ny/minetta-tavern">Minetta Tavern</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=113+MacDougal+St,+New+York,+NY+10012">113 MacDougal St, Greenwich Village</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=113+MacDougal+St,+New+York,+NY+10012&travelmode=transit">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                            <a class="action primary" href="https://resy.com/cities/ny/minetta-tavern" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Reserve
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>RESERVATION REQUIRED.</strong> Book 30 days ahead at midnight ET on Resy. Classic French bistro. Fallback: Balthazar (80 Spring St).
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="entertainment">
+                    <span class="event-time">9:00</span>
+                    <div class="event-card">
+                        <div class="event-label">Jazz</div>
+                        <div class="event-name"><a href="https://villagevanguard.com/">Village Vanguard</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=178+7th+Ave+S,+New+York,+NY+10014">178 7th Ave S, Greenwich Village</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=178+7th+Ave+S,+New+York,+NY+10014&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                            <a class="action primary" href="https://villagevanguard.com" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Tickets
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>Legendary jazz since 1935.</strong> $30+ cover. Sets at 9pm & 11pm. Reopens Jan 12 - you're good!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event fallback" data-type="entertainment">
+                    <span class="event-time">Alt</span>
+                    <div class="event-card">
+                        <div class="event-label"><a href="https://www.smallslive.com/">Smalls Jazz Club</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=183+W+10th+St,+New+York,+NY+10014">183 W 10th St, Greenwich Village</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://www.smallslive.com/tickets/" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Tickets
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>Intimate 74-seat venue.</strong> $25-30 cover. No phone - book online only.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DAY 5 -->
+        <section class="day" id="day5">
+            <div class="day-header">
+                <span class="day-number">05</span>
+                <div class="day-info">
+                    <span class="day-date">Saturday, January 18</span>
+                    <h2 class="day-title">Departure</h2>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <div class="time-section">
+                    <span class="time-section-label">Morning</span>
+                    <div class="time-section-line"></div>
+                </div>
+
+                <div class="event" data-type="food">
+                    <span class="event-time">AM</span>
+                    <div class="event-card">
+                        <div class="event-label">Coffee & Farewell</div>
+                        <div class="event-name"><a href="https://www.abraconyc.com/">Abraco</a></div>
+                        <div class="event-address"><a href="https://maps.google.com/?q=81+E+7th+St,+New+York,+NY+10003">81 E 7th St, East Village</a></div>
+                        <div class="actions">
+                            <a class="action" href="https://maps.google.com/maps/dir/?api=1&destination=81+E+7th+St,+New+York,+NY+10003&travelmode=walking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Directions
+                            </a>
+                        </div>
+                        <div class="tips">
+                            <strong>Tiny legendary coffee spot.</strong> Mon-Thu 8-8, Fri-Sat 8-10, Sun 9-6. Great pastries.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event" data-type="activity">
+                    <span class="event-time"></span>
+                    <div class="event-card" style="background: linear-gradient(135deg, var(--gold-dim) 0%, var(--gold) 100%); border: none; color: var(--bg-deep);">
+                        <div class="event-name" style="color: var(--bg-deep);">Safe travels home!</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer Notes -->
+        <div class="footer-notes">
+            <div class="footer-note">
+                <div class="footer-note-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                </div>
+                <div>
+                    <h3>January Weather</h3>
+                    <p>Pack warm layers for bridge walks and Central Park. Expect 30-40°F (-1 to 4°C). Wind chill makes it feel colder on exposed areas.</p>
+                </div>
+            </div>
+            <div class="footer-note">
+                <div class="footer-note-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 12l6-6"/></svg>
+                </div>
+                <div>
+                    <h3>Food Strategy</h3>
+                    <p>One splurge (Katz's). Focus on pizza, bagels, Chinatown. Avoid hype dining. Save budget for Texas BBQ.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Day navigation active state
+        const sections = document.querySelectorAll('.day');
+        const navLinks = document.querySelectorAll('.day-nav a');
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '-20% 0px -70% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+
+        // Scroll animations for days
+        const animateOnScroll = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        sections.forEach(section => {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(20px)';
+            animateOnScroll.observe(section);
+        });
+    </script>
+
+    <!-- Chat Widget -->
+    <div id="chat-widget" class="chat-widget">
+        <button id="chat-toggle" class="chat-toggle" aria-label="Open chat">
+            <svg class="chat-icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <svg class="chat-icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+
+        <div id="chat-panel" class="chat-panel">
+            <div class="chat-header">
+                <div class="chat-header-info">
+                    <span class="chat-header-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <h3 class="chat-title">Trip Assistant</h3>
+                        <span class="chat-subtitle">Ask about your NYC trip</span>
+                    </div>
+                </div>
+                <button id="chat-close" class="chat-close" aria-label="Close chat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="chat-messages" class="chat-messages">
+                <div class="chat-message assistant">
+                    <div class="chat-message-content">
+                        Hey! I'm your NYC trip assistant. Ask me about restaurants, directions, reservations, or anything about your Jan 14-18 itinerary.
+                    </div>
+                </div>
+            </div>
+
+            <form id="chat-form" class="chat-input-area">
+                <input
+                    type="text"
+                    id="chat-input"
+                    class="chat-input"
+                    placeholder="Ask about your trip..."
+                    autocomplete="off"
+                />
+                <button type="submit" id="chat-send" class="chat-send" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const widget = document.getElementById('chat-widget');
+        const toggle = document.getElementById('chat-toggle');
+        const closeBtn = document.getElementById('chat-close');
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('chat-input');
+        const messagesContainer = document.getElementById('chat-messages');
+        const sendBtn = document.getElementById('chat-send');
+
+        let isOpen = false;
+        let isLoading = false;
+
+        function toggleChat() {
+            isOpen = !isOpen;
+            widget.classList.toggle('open', isOpen);
+            if (isOpen) {
+                input.focus();
+                scrollToBottom();
+            }
+        }
+
+        function closeChat() {
+            isOpen = false;
+            widget.classList.remove('open');
+        }
+
+        function scrollToBottom() {
+            messagesContainer.scrollTo({
+                top: messagesContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function linkify(text) {
+            // Convert markdown links [text](url) to HTML
+            text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            // Convert bare URLs to links
+            text = text.replace(/(^|[^"'])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank">$2</a>');
+            return text;
+        }
+
+        function addMessage(content, role) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'chat-message-content';
+            contentDiv.innerHTML = linkify(content);
+
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+
+            return messageDiv;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message assistant typing';
+            typingDiv.id = 'typing-indicator';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'chat-message-content';
+            contentDiv.innerHTML = `
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            `;
+
+            typingDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        }
+
+        async function sendMessage(message) {
+            if (isLoading || !message.trim()) return;
+
+            isLoading = true;
+            sendBtn.disabled = true;
+
+            addMessage(message, 'user');
+            input.value = '';
+
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message }),
+                });
+
+                const data = await response.json();
+                removeTypingIndicator();
+
+                if (!response.ok) {
+                    addMessage(data.error || 'Sorry, something went wrong. Please try again.', 'assistant');
+                    return;
+                }
+
+                addMessage(data.response || 'Sorry, I could not process that.', 'assistant');
+
+            } catch (error) {
+                console.error('Chat error:', error);
+                removeTypingIndicator();
+                addMessage('Connection error. Please check your internet and try again.', 'assistant');
+            } finally {
+                isLoading = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        toggle.addEventListener('click', toggleChat);
+        closeBtn.addEventListener('click', closeChat);
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            sendMessage(input.value);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isOpen) closeChat();
+        });
+    })();
+    </script>
+</body>
+</html>
