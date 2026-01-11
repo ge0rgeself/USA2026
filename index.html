@@ -1098,6 +1098,136 @@
             padding: 18px 22px;
             font-size: 15px;
             line-height: 1.7;
+            white-space: normal;
+        }
+
+        .message-body p {
+            margin: 0 0 12px 0;
+        }
+
+        .message-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Markdown Formatting Styles */
+        .message-body strong {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .message-body em {
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .message-body .inline-code {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            font-size: 0.9em;
+            background: rgba(201, 70, 61, 0.08);
+            color: var(--coral);
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .message-body .code-block {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            font-size: 13px;
+            background: #1a1a1a;
+            color: #f8f6f3;
+            padding: 16px 18px;
+            border-radius: 8px;
+            margin: 12px 0;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.5;
+        }
+
+        .message-body .code-block code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .message-body ul,
+        .message-body ol {
+            margin: 10px 0;
+            padding-left: 24px;
+        }
+
+        .message-body li {
+            margin: 6px 0;
+            line-height: 1.6;
+        }
+
+        .message-body ul li::marker {
+            color: var(--coral);
+        }
+
+        .message-body ol li::marker {
+            color: var(--coral);
+            font-weight: 500;
+        }
+
+        .message-body blockquote {
+            border-left: 3px solid var(--coral);
+            margin: 12px 0;
+            padding: 8px 16px;
+            background: rgba(201, 70, 61, 0.04);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .message-body .chat-hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+            margin: 16px 0;
+        }
+
+        /* User message markdown overrides */
+        .chat-message-full.user .chat-message-content-full {
+            white-space: normal;
+        }
+
+        .chat-message-full.user .inline-code {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .chat-message-full.user .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            color: #f8f6f3;
+            margin: 10px 0;
+        }
+
+        .chat-message-full.user blockquote {
+            border-left-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .chat-message-full.user ul,
+        .chat-message-full.user ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .chat-message-full.user li {
+            margin: 4px 0;
+        }
+
+        .chat-message-full.user li::marker {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .chat-message-full.user strong {
+            color: #fff;
+        }
+
+        .chat-message-full.user em {
+            color: rgba(255, 255, 255, 0.85);
         }
 
         /* Typing Indicator - Elegant Paw Animation */
@@ -2050,9 +2180,73 @@
             }
         }
 
-        linkify(text) {
-            text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-            text = text.replace(/(^|[^"'])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank">$2</a>');
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        formatMarkdown(text) {
+            // First escape HTML to prevent XSS
+            text = this.escapeHtml(text);
+
+            // Code blocks (```code```) - must be processed first
+            text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+                return `<pre class="code-block${lang ? ' lang-' + lang : ''}"><code>${code.trim()}</code></pre>`;
+            });
+
+            // Inline code (`code`)
+            text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+
+            // Bold (**text** or __text__)
+            text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+
+            // Italic (*text* or _text_)
+            text = text.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+            text = text.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+
+            // Blockquotes (> text)
+            text = text.replace(/^&gt;\s*(.*)$/gm, '<blockquote>$1</blockquote>');
+            text = text.replace(/<\/blockquote>\n<blockquote>/g, '<br>');
+
+            // Process lists line by line
+            const lines = text.split('\n');
+            let result = [];
+            let inUl = false;
+            let inOl = false;
+
+            for (let line of lines) {
+                const ulMatch = line.match(/^[-*]\s+(.*)$/);
+                const olMatch = line.match(/^\d+\.\s+(.*)$/);
+
+                if (ulMatch) {
+                    if (inOl) { result.push('</ol>'); inOl = false; }
+                    if (!inUl) { result.push('<ul>'); inUl = true; }
+                    result.push(`<li>${ulMatch[1]}</li>`);
+                } else if (olMatch) {
+                    if (inUl) { result.push('</ul>'); inUl = false; }
+                    if (!inOl) { result.push('<ol>'); inOl = true; }
+                    result.push(`<li>${olMatch[1]}</li>`);
+                } else {
+                    if (inUl) { result.push('</ul>'); inUl = false; }
+                    if (inOl) { result.push('</ol>'); inOl = false; }
+                    result.push(line);
+                }
+            }
+            if (inUl) result.push('</ul>');
+            if (inOl) result.push('</ol>');
+            text = result.join('\n');
+
+            // Links - markdown format [text](url)
+            text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+            // Bare URLs (not already in href)
+            text = text.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+
+            // Horizontal rules (--- or ***)
+            text = text.replace(/^(---|\*\*\*)$/gm, '<hr class="chat-hr">');
+
             return text;
         }
 
@@ -2078,7 +2272,7 @@
                         <span>Oscar</span>
                         <time>${timeStr}</time>
                     </div>
-                    <div class="message-body">${this.linkify(cleanContent)}</div>
+                    <div class="message-body">${this.formatMarkdown(cleanContent)}</div>
                 `;
 
                 if (hasUpdate) {
@@ -2105,8 +2299,8 @@
                     contentDiv.appendChild(actionsDiv);
                 }
             } else {
-                // User messages - simple content
-                contentDiv.innerHTML = this.linkify(content);
+                // User messages - simple content with markdown
+                contentDiv.innerHTML = this.formatMarkdown(content);
             }
 
             messageDiv.appendChild(contentDiv);
