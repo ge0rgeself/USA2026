@@ -1586,6 +1586,8 @@
             this.data = null;
             this.selectedDay = 1;
             this.expandedEvent = null;
+            this.editingEvent = null;
+            this.editState = null;
             this.initPillHandlers();
         }
 
@@ -1653,8 +1655,77 @@
 
             // Attach click handlers
             this.container.querySelectorAll('.event-row').forEach((row, index) => {
-                row.addEventListener('click', () => this.toggleEvent(index));
+                const isEditing = row.classList.contains('editing');
+                if (!isEditing) {
+                    row.addEventListener('click', () => this.toggleEvent(index));
+                }
             });
+
+            // Edit icon click handlers
+            this.container.querySelectorAll('.event-edit-icon').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(btn.dataset.index);
+                    this.startEdit(index);
+                });
+            });
+
+            // Edit form event handlers
+            this.container.querySelectorAll('.event-edit-form').forEach(form => {
+                const index = parseInt(form.closest('.event-row').dataset.event);
+
+                // Time select change
+                const select = form.querySelector('[data-field="time"]');
+                if (select) {
+                    select.addEventListener('change', () => {
+                        this.updateEditField(index, 'time', select.value);
+                    });
+                }
+
+                // Description input
+                const input = form.querySelector('[data-field="description"]');
+                if (input) {
+                    input.addEventListener('blur', () => {
+                        this.saveEdit(index);
+                    });
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            this.saveEdit(index);
+                        }
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            this.cancelEdit();
+                        }
+                    });
+                    input.focus();
+                }
+
+                // Label chip toggles
+                form.querySelectorAll('.event-edit-chip').forEach(chip => {
+                    chip.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const field = chip.dataset.field;
+                        chip.classList.toggle('active');
+                        this.updateEditField(index, field, chip.classList.contains('active'));
+                    });
+                });
+
+                // Delete button
+                const deleteBtn = form.querySelector('[data-action="delete"]');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.deleteEvent(index);
+                    });
+                }
+            });
+
+            // Click outside to save
+            document.removeEventListener('click', this.handleOutsideClick.bind(this));
+            if (this.editingEvent !== null) {
+                document.addEventListener('click', this.handleOutsideClick.bind(this));
+            }
         }
 
         renderHotelCard() {
@@ -1696,7 +1767,12 @@
                     lastTimeGroup = timeGroup;
                 }
 
-                html += this.renderEventRow(item, eventIndex);
+                const isEditing = this.editingEvent === eventIndex;
+                if (isEditing) {
+                    html += this.renderEditForm(item, eventIndex);
+                } else {
+                    html += this.renderEventRow(item, eventIndex);
+                }
                 eventIndex++;
             }
 
@@ -1732,6 +1808,11 @@
                     ${hook ? `<span class="event-hook">${this.escapeHtml(hook)}</span>` : ''}
                     ${badgeHtml}
                     ${neighborhood ? `<span class="event-neighborhood">${neighborhood}</span>` : ''}
+                    <button class="event-edit-icon" data-action="edit" data-index="${index}" aria-label="Edit event">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                        </svg>
+                    </button>
                     <svg class="event-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="6 9 12 15 18 9"/>
                     </svg>
@@ -1798,6 +1879,44 @@
                             <a href="${this.escapeHtml(place.mapsUrl)}" target="_blank">${this.escapeHtml(place.address)}</a>
                         </div>
                     ` : ''}
+                </div>
+            </div>`;
+        }
+
+        renderEditForm(item, index) {
+            const timeValue = item.time || 'morning';
+            const description = item.description || '';
+
+            return `
+            <div class="event-row editing" data-event="${index}">
+                <div class="event-edit-form">
+                    <div class="event-edit-row">
+                        <span class="event-type-dot ${item.type || 'activity'}"></span>
+                        <select class="event-edit-select" data-field="time">
+                            <option value="morning" ${timeValue === 'morning' ? 'selected' : ''}>Morning</option>
+                            <option value="afternoon" ${timeValue === 'afternoon' ? 'selected' : ''}>Afternoon</option>
+                            <option value="evening" ${timeValue === 'evening' ? 'selected' : ''}>Evening</option>
+                            <option value="night" ${timeValue === 'night' ? 'selected' : ''}>Night</option>
+                        </select>
+                        <button class="event-edit-delete" data-action="delete" aria-label="Delete event">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="event-edit-row event-edit-row-main">
+                        <input type="text" class="event-edit-input" data-field="description"
+                               value="${this.escapeHtml(description)}"
+                               placeholder="Event description...">
+                    </div>
+                    <div class="event-edit-labels">
+                        <button class="event-edit-chip ${item.fallback ? 'active' : ''}" data-field="fallback">
+                            Backup
+                        </button>
+                        <button class="event-edit-chip ${item.optional ? 'active' : ''}" data-field="optional">
+                            Optional
+                        </button>
+                    </div>
                 </div>
             </div>`;
         }
@@ -1890,6 +2009,218 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        startEdit(index) {
+            this.editingEvent = index;
+            this.expandedEvent = null;
+            this.render();
+        }
+
+        updateEditField(index, field, value) {
+            if (!this.editState) {
+                const dayData = this.data.days[this.selectedDay - 1];
+                const item = dayData.items[index];
+                this.editState = { ...item };
+            }
+            this.editState[field] = value;
+        }
+
+        cancelEdit() {
+            this.editingEvent = null;
+            this.editState = null;
+            this.render();
+        }
+
+        handleOutsideClick(e) {
+            if (this.editingEvent === null) return;
+            const editForm = this.container.querySelector('.event-edit-form');
+            if (editForm && !editForm.contains(e.target)) {
+                this.saveEdit(this.editingEvent);
+            }
+        }
+
+        showSaveIndicator(text, success = false) {
+            let indicator = document.querySelector('.save-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'save-indicator';
+                document.body.appendChild(indicator);
+            }
+            indicator.textContent = text;
+            indicator.classList.toggle('success', success);
+            indicator.classList.add('visible');
+
+            if (success) {
+                setTimeout(() => indicator.classList.remove('visible'), 1500);
+            }
+        }
+
+        async saveEdit(index) {
+            if (this.editingEvent === null) return;
+
+            const form = this.container.querySelector('.event-edit-form');
+            if (!form) return;
+
+            const input = form.querySelector('[data-field="description"]');
+            const select = form.querySelector('[data-field="time"]');
+            const description = input?.value?.trim();
+
+            const dayData = this.data.days[this.selectedDay - 1];
+            const item = dayData.items[index];
+            const isNew = item?.isNew;
+
+            if (!description) {
+                if (isNew) {
+                    dayData.items.splice(index, 1);
+                }
+                this.cancelEdit();
+                return;
+            }
+
+            const updatedItem = {
+                time: select?.value || 'morning',
+                description: description,
+                fallback: form.querySelector('[data-field="fallback"]')?.classList.contains('active') || false,
+                optional: form.querySelector('[data-field="optional"]')?.classList.contains('active') || false
+            };
+
+            this.showSaveIndicator('Saving...');
+
+            try {
+                const endpoint = '/api/itinerary/item';
+                const method = isNew ? 'POST' : 'PATCH';
+                const body = isNew
+                    ? { day: this.selectedDay - 1, item: updatedItem }
+                    : { day: this.selectedDay - 1, index: index, item: updatedItem };
+
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) throw new Error('Save failed');
+
+                const { json } = await response.json();
+                this.data = json;
+                this.showSaveIndicator('Saved ✓', true);
+            } catch (err) {
+                console.error('Save error:', err);
+                if (isNew) {
+                    dayData.items.splice(index, 1);
+                }
+                showToast('Failed to save changes', 'error');
+            }
+
+            this.editingEvent = null;
+            this.editState = null;
+            this.render();
+        }
+
+        async deleteEvent(index) {
+            const dayData = this.data.days[this.selectedDay - 1];
+            const item = dayData.items[index];
+            const itemName = item.place?.name || item.description;
+
+            const deletedItem = { ...item };
+            const deletedIndex = index;
+            const deletedDay = this.selectedDay - 1;
+
+            dayData.items.splice(index, 1);
+            this.editingEvent = null;
+            this.render();
+
+            const undoToast = this.showUndoToast(`Deleted "${itemName}"`, async () => {
+                dayData.items.splice(deletedIndex, 0, deletedItem);
+                this.render();
+            });
+
+            setTimeout(async () => {
+                if (undoToast.undone) return;
+
+                try {
+                    const response = await fetch('/api/itinerary/item', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            day: deletedDay,
+                            index: deletedIndex
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Delete failed');
+
+                    const { json } = await response.json();
+                    this.data = json;
+                } catch (err) {
+                    console.error('Delete error:', err);
+                    dayData.items.splice(deletedIndex, 0, deletedItem);
+                    this.render();
+                    showToast('Failed to delete event', 'error');
+                }
+            }, 3000);
+        }
+
+        showUndoToast(message, onUndo) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast undo';
+
+            const state = { undone: false };
+
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button class="toast-undo-btn">Undo</button>
+            `;
+
+            toast.querySelector('.toast-undo-btn').addEventListener('click', () => {
+                state.undone = true;
+                onUndo();
+                toast.remove();
+            });
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                if (!state.undone) {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+
+            return state;
+        }
+
+        addNewEvent(time) {
+            const dayData = this.data.days[this.selectedDay - 1];
+
+            const timeOrder = ['morning', 'afternoon', 'evening', 'night'];
+            const targetOrder = timeOrder.indexOf(time);
+
+            let insertIndex = dayData.items.length;
+            for (let i = 0; i < dayData.items.length; i++) {
+                const itemGroup = this.getTimeGroup(dayData.items[i].time)?.toLowerCase();
+                const itemOrder = timeOrder.indexOf(itemGroup);
+                if (itemOrder > targetOrder) {
+                    insertIndex = i;
+                    break;
+                }
+            }
+
+            const newItem = {
+                time: time,
+                description: '',
+                type: 'activity',
+                fallback: false,
+                optional: false,
+                place: null,
+                isNew: true
+            };
+
+            dayData.items.splice(insertIndex, 0, newItem);
+            this.editingEvent = insertIndex;
+            this.render();
         }
     }
 
