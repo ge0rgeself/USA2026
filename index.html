@@ -1588,6 +1588,8 @@
             this.expandedEvent = null;
             this.editingEvent = null;
             this.editState = null;
+            // Bind outside click handler once to prevent memory leak
+            this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
             this.initPillHandlers();
         }
 
@@ -1707,11 +1709,21 @@
             this.container.querySelectorAll('.event-edit-form').forEach(form => {
                 const index = parseInt(form.closest('.event-row').dataset.event);
 
-                // Time select change
-                const select = form.querySelector('[data-field="time"]');
-                if (select) {
-                    select.addEventListener('change', () => {
-                        this.updateEditField(index, 'time', select.value);
+                // Time input handlers (matching description field behavior)
+                const timeInput = form.querySelector('[data-field="time"]');
+                if (timeInput) {
+                    timeInput.addEventListener('blur', () => {
+                        this.saveEdit(index);
+                    });
+                    timeInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            this.saveEdit(index);
+                        }
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            this.cancelEdit();
+                        }
                     });
                 }
 
@@ -1763,9 +1775,9 @@
             });
 
             // Click outside to save
-            document.removeEventListener('click', this.handleOutsideClick.bind(this));
+            document.removeEventListener('click', this.boundHandleOutsideClick);
             if (this.editingEvent !== null) {
-                document.addEventListener('click', this.handleOutsideClick.bind(this));
+                document.addEventListener('click', this.boundHandleOutsideClick);
             }
         }
 
@@ -2102,7 +2114,7 @@
             if (!form) return;
 
             const input = form.querySelector('[data-field="description"]');
-            const select = form.querySelector('[data-field="time"]');
+            const timeInput = form.querySelector('[data-field="time"]');
             const description = input?.value?.trim();
 
             const dayData = this.data.days[this.selectedDay - 1];
@@ -2118,7 +2130,7 @@
             }
 
             const updatedItem = {
-                time: select?.value || 'morning',
+                time: timeInput?.value?.trim() || 'morning',
                 description: description,
                 fallback: form.querySelector('[data-field="fallback"]')?.classList.contains('active') || false,
                 optional: form.querySelector('[data-field="optional"]')?.classList.contains('active') || false
