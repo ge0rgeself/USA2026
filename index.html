@@ -1093,6 +1093,19 @@
             margin-left: auto;
         }
 
+        .research-badge {
+            font-size: 10px;
+            font-weight: 600;
+            color: #166534;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            padding: 3px 8px;
+            border-radius: 10px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            margin-left: 8px;
+            border: 1px solid rgba(22, 101, 52, 0.15);
+        }
+
         /* Message Body */
         .message-body {
             padding: 18px 22px;
@@ -2168,7 +2181,7 @@
                 if (!response.ok) {
                     this.addMessage(data.error || 'Something went wrong.', 'assistant');
                 } else {
-                    this.addMessage(data.response, 'assistant');
+                    this.addMessage(data.response, 'assistant', { researchPerformed: data.researchPerformed });
                 }
             } catch (err) {
                 this.hideTyping();
@@ -2250,7 +2263,7 @@
             return text;
         }
 
-        addMessage(content, role) {
+        addMessage(content, role, options = {}) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message-full ${role}`;
 
@@ -2266,11 +2279,17 @@
                 const hasUpdate = content.includes('[UPDATE_AVAILABLE]');
                 const cleanContent = hasUpdate ? content.replace('[UPDATE_AVAILABLE]', '').trim() : content;
 
+                // Research indicator
+                const researchBadge = options.researchPerformed
+                    ? '<span class="research-badge" title="Response backed by real-time Google Maps data">verified</span>'
+                    : '';
+
                 contentDiv.innerHTML = `
                     <div class="oscar-attribution">
                         <div class="oscar-mini-avatar">🐶</div>
                         <span>Oscar</span>
                         <time>${timeStr}</time>
+                        ${researchBadge}
                     </div>
                     <div class="message-body">${this.formatMarkdown(cleanContent)}</div>
                 `;
