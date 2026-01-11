@@ -1936,24 +1936,45 @@
             let eventIndex = 0;
 
             for (const item of items) {
-                // Time divider
-                const timeGroup = this.getTimeGroup(item.time);
-                if (timeGroup && timeGroup !== lastTimeGroup) {
-                    html += `
-                    <div class="time-divider">
-                        <span class="time-divider-label">${timeGroup}</span>
-                        <div class="time-divider-line"></div>
-                    </div>`;
-                    lastTimeGroup = timeGroup;
+                // Time divider (only show in view mode, not edit mode)
+                if (!this.isEditMode) {
+                    const timeGroup = this.getTimeGroup(item.time);
+                    if (timeGroup && timeGroup !== lastTimeGroup) {
+                        html += `
+                        <div class="time-divider">
+                            <span class="time-divider-label">${timeGroup}</span>
+                            <div class="time-divider-line"></div>
+                        </div>`;
+                        lastTimeGroup = timeGroup;
+                    }
                 }
 
-                const isEditing = this.editingEvent === eventIndex;
-                if (isEditing) {
+                // Always use edit form in edit mode
+                if (this.isEditMode) {
                     html += this.renderEditForm(item, eventIndex);
                 } else {
-                    html += this.renderEventRow(item, eventIndex);
+                    const isEditing = this.editingEvent === eventIndex;
+                    if (isEditing) {
+                        html += this.renderEditForm(item, eventIndex);
+                    } else {
+                        html += this.renderEventRow(item, eventIndex);
+                    }
                 }
                 eventIndex++;
+            }
+
+            // In edit mode, attach change handlers to track modifications
+            if (this.isEditMode) {
+                setTimeout(() => {
+                    this.container.querySelectorAll('.event-edit-form').forEach((form, idx) => {
+                        const inputs = form.querySelectorAll('[data-field]');
+                        inputs.forEach(input => {
+                            input.addEventListener('change', () => {
+                                this.markEventModified(idx);
+                            });
+                        });
+                    });
+                }, 0);
             }
 
             return html;
@@ -2231,6 +2252,14 @@
 
             if (success) {
                 setTimeout(() => indicator.classList.remove('visible'), 1500);
+            }
+        }
+
+        markEventModified(index) {
+            const dayData = this.data.days[this.selectedDay - 1];
+            const item = dayData.items[index];
+            if (!item.isNew) {
+                this.pendingChanges.modified[index] = true;
             }
         }
 
