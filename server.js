@@ -99,9 +99,10 @@ const genAI = process.env.GOOGLE_GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
   : null;
 
-// Import parser and enricher
+// Import parser, enricher, and storage
 const { parseItinerary } = require('./lib/parser');
 const { enrichItinerary } = require('./lib/enricher');
+const { readItinerary, writeItinerary, writeItineraryJson } = require('./lib/storage');
 
 // Load itinerary files
 let itineraryTxt = '';
@@ -109,14 +110,14 @@ let itineraryJson = null;
 
 async function loadItinerary() {
   try {
-    itineraryTxt = fs.readFileSync('./itinerary.txt', 'utf-8');
+    itineraryTxt = await readItinerary();
     const parsed = parseItinerary(itineraryTxt);
     itineraryJson = await enrichItinerary(parsed, genAI);
-    fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+    writeItineraryJson(itineraryJson);
     console.log('Itinerary loaded and enriched');
   } catch (err) {
     console.error('Error loading itinerary:', err);
-    // Fallback to txt only
+    // Fallback to local txt only
     try {
       itineraryTxt = fs.readFileSync('./itinerary.txt', 'utf-8');
       itineraryJson = parseItinerary(itineraryTxt);
@@ -263,13 +264,13 @@ app.put('/api/itinerary', requireAuth, async (req, res) => {
     }
 
     // Save raw txt
-    fs.writeFileSync('./itinerary.txt', content, 'utf-8');
+    await writeItinerary(content);
     itineraryTxt = content;
 
     // Parse and enrich
     const parsed = parseItinerary(content);
     itineraryJson = await enrichItinerary(parsed, genAI);
-    fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+    writeItineraryJson(itineraryJson);
 
     res.json({
       success: true,
@@ -310,16 +311,14 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
 
     // Regenerate txt
     itineraryTxt = regenerateItineraryTxt(itineraryJson);
-    fs.writeFileSync('./itinerary.txt', itineraryTxt, 'utf-8');
+    await writeItinerary(itineraryTxt);
 
     // Re-enrich if description changed
     if (descriptionChanged) {
       const parsed = parseItinerary(itineraryTxt);
       itineraryJson = await enrichItinerary(parsed, genAI);
-      fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
-    } else {
-      fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
     }
+    writeItineraryJson(itineraryJson);
 
     res.json({ success: true, json: itineraryJson });
   } catch (err) {
@@ -369,12 +368,12 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
 
     // Regenerate txt
     itineraryTxt = regenerateItineraryTxt(itineraryJson);
-    fs.writeFileSync('./itinerary.txt', itineraryTxt, 'utf-8');
+    await writeItinerary(itineraryTxt);
 
     // Enrich the new item
     const parsed = parseItinerary(itineraryTxt);
     itineraryJson = await enrichItinerary(parsed, genAI);
-    fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+    writeItineraryJson(itineraryJson);
 
     res.json({ success: true, json: itineraryJson });
   } catch (err) {
@@ -401,8 +400,8 @@ app.delete('/api/itinerary/item', requireAuth, async (req, res) => {
 
     // Regenerate txt
     itineraryTxt = regenerateItineraryTxt(itineraryJson);
-    fs.writeFileSync('./itinerary.txt', itineraryTxt, 'utf-8');
-    fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+    await writeItinerary(itineraryTxt);
+    writeItineraryJson(itineraryJson);
 
     res.json({ success: true, json: itineraryJson });
   } catch (err) {
@@ -491,12 +490,12 @@ Make the minimal change needed. Do not add explanations.`;
     const newTxt = response.content[0].text.trim();
 
     // Save and enrich
-    fs.writeFileSync('./itinerary.txt', newTxt, 'utf-8');
+    await writeItinerary(newTxt);
     itineraryTxt = newTxt;
 
     const parsed = parseItinerary(newTxt);
     itineraryJson = await enrichItinerary(parsed, genAI);
-    fs.writeFileSync('./itinerary.json', JSON.stringify(itineraryJson, null, 2));
+    writeItineraryJson(itineraryJson);
 
     res.json({
       success: true,

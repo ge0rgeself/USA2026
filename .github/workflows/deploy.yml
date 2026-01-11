@@ -19,6 +19,8 @@ jobs:
           service: nyc-trip
           region: us-central1
           source: .
+          env_vars: |
+            USE_GCS=true
           secrets: |
             ANTHROPIC_API_KEY=anthropic-api-key:latest
             GOOGLE_CLIENT_ID=google-client-id:latest
