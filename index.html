@@ -459,19 +459,81 @@
         }
 
         .event-address {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
+            font-size: 12px;
+            color: var(--accent-dim);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--timeline-line);
         }
 
         .event-address a {
-            color: var(--text-secondary);
+            color: var(--accent-dim);
             text-decoration: none;
         }
 
         .event-address a:hover {
             color: var(--text-primary);
             text-decoration: underline;
+        }
+
+        .event-description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .event-tips {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: var(--bg-elevated);
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .tips-icon {
+            flex-shrink: 0;
+        }
+
+        .event-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-sep {
+            color: var(--timeline-line);
+        }
+
+        .event-waypoints {
+            margin-bottom: 12px;
+        }
+
+        .waypoint {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 6px 0;
+            border-bottom: 1px solid var(--timeline-line);
+        }
+
+        .waypoint:last-child {
+            border-bottom: none;
+        }
+
+        .event-route-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .event-actions {
