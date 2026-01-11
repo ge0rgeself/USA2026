@@ -2238,21 +2238,24 @@
         }
 
         async deleteEvent(index) {
-            const dayData = this.data.days[this.selectedDay - 1];
+            const dayIndex = this.selectedDay - 1;
+            const dayData = this.data.days[dayIndex];
             const item = dayData.items[index];
             const itemName = item.place?.name || item.description;
 
-            const deletedItem = { ...item };
+            // Deep copy the item for restoration
+            const deletedItem = JSON.parse(JSON.stringify(item));
             const deletedIndex = index;
-            const deletedDay = this.selectedDay - 1;
 
             dayData.items.splice(index, 1);
             this.editingEvent = null;
 
             // Show undo toast and delete via API
             this.render();
-            const undoToast = this.showUndoToast(`Deleted "${itemName}"`, async () => {
-                dayData.items.splice(deletedIndex, 0, deletedItem);
+            const undoToast = this.showUndoToast(`Deleted "${itemName}"`, () => {
+                // Re-read dayData from current this.data to handle race conditions
+                const currentDayData = this.data.days[dayIndex];
+                currentDayData.items.splice(deletedIndex, 0, deletedItem);
                 this.render();
             });
 
@@ -2264,7 +2267,7 @@
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            day: deletedDay,
+                            day: dayIndex,
                             index: deletedIndex
                         })
                     });
@@ -2275,7 +2278,9 @@
                     this.data = json;
                 } catch (err) {
                     console.error('Delete error:', err);
-                    dayData.items.splice(deletedIndex, 0, deletedItem);
+                    // Re-read dayData for error recovery too
+                    const currentDayData = this.data.days[dayIndex];
+                    currentDayData.items.splice(deletedIndex, 0, deletedItem);
                     this.render();
                     showToast('Failed to delete event', 'error');
                 }

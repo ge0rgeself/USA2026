@@ -135,14 +135,18 @@ function regenerateItineraryTxt(data) {
     // Hotel
     if (data.hotel) {
         txt += '# Hotel\n';
-        txt += data.hotel + '\n\n';
+        // Handle both string and enriched object formats
+        const hotelStr = typeof data.hotel === 'string' ? data.hotel : data.hotel.name;
+        txt += hotelStr + '\n\n';
     }
 
     // Reservations
     if (data.reservations && data.reservations.length > 0) {
         txt += '# Reservations\n';
         data.reservations.forEach(r => {
-            txt += `- ${r}\n`;
+            // Handle both string and enriched object formats
+            const resStr = typeof r === 'string' ? r : r.name;
+            txt += `- ${resStr}\n`;
         });
         txt += '\n';
     }
