@@ -5,10 +5,10 @@ This file provides guidance to Claude Code when working with this repository.
 ## Project Overview
 
 NYC trip chatbot and interactive travel guide for January 14-18, 2025. Features:
-- Single-page HTML travel guide with timeline view
+- 3-section SPA (Calendar, Editor, Chat) with Editorial design theme
 - Claude-powered chat assistant for trip questions
 - Google OAuth authentication (whitelist: self.gt@gmail.com, valmikh17@gmail.com)
-- Hosted on Google Cloud Run
+- Hosted on Google Cloud Run with CI/CD via GitHub Actions
 
 **Live URL:** https://nyc-trip-522204863154.us-central1.run.app
 
@@ -16,12 +16,12 @@ NYC trip chatbot and interactive travel guide for January 14-18, 2025. Features:
 
 | File | Purpose |
 |------|---------|
-| `server.js` | Express server with Google OAuth + Claude chat API |
-| `nyc_itinerary.html` | Main trip guide (dark theme, timeline, chat widget) |
-| `nyc_itinerary.md` | Itinerary data fed to Claude for context |
+| `index.html` | Main app (Editorial theme - white/cream, black serif typography) |
 | `login.html` | Google Sign-In page |
+| `server.js` | Express server with Google OAuth + Claude chat API |
+| `nyc_itinerary.md` | Itinerary data fed to Claude for context |
 | `Dockerfile` | Container config for Cloud Run |
-| `.env` | Local dev secrets (gitignored) |
+| `.github/workflows/deploy.yml` | CI/CD - auto-deploys on push to main |
 
 ## Development
 
@@ -33,30 +33,35 @@ npm start
 # Note: OAuth won't work locally (callback URL mismatch)
 ```
 
-### Deploy to Cloud Run
+### Deployment
+
+**Automatic:** Push to `main` triggers GitHub Actions deploy to Cloud Run (~2 min).
+
+```bash
+git push                    # triggers auto-deploy
+gh run watch               # watch deploy progress
+```
+
+**Manual (if needed):**
 ```bash
 gcloud run deploy nyc-trip --source . --region us-central1
 ```
 
-Full deploy with secrets:
-```bash
-gcloud run deploy nyc-trip --source . --region us-central1 \
-  --allow-unauthenticated \
-  --set-secrets=ANTHROPIC_API_KEY=anthropic-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest \
-  --set-env-vars=NODE_ENV=production --port 8080
-```
-
 ## Architecture
+
+### App Sections
+- **Calendar** - Timeline view of trip itinerary by day
+- **Editor** - Markdown editor for itinerary notes
+- **Chat** - Claude-powered Q&A about the trip
 
 ### Authentication Flow
 1. Unauthenticated users → redirect to `/login`
 2. Click "Sign in with Google" → Google OAuth consent
 3. Callback validates email against whitelist
 4. 7-day session cookie set on success
-5. Logout via `/logout`
 
 ### Server Routes
-- `GET /` - Main itinerary (protected)
+- `GET /` - Main app (protected)
 - `GET /login` - Login page
 - `GET /auth/google` - Initiate OAuth
 - `GET /auth/google/callback` - OAuth callback
@@ -71,17 +76,19 @@ gcloud run deploy nyc-trip --source . --region us-central1 \
 |---------|----------|
 | Cloud Run | `nyc-trip` (us-central1) |
 | Secret Manager | `anthropic-api-key`, `google-client-id`, `google-client-secret` |
-| OAuth Credentials | `nyc-trip` web client |
+| IAM | `github-deploy` service account (for CI/CD) |
 
-## Environment Variables
+## CI/CD
 
-### Local (.env)
-```
-ANTHROPIC_API_KEY=your-key
-```
+GitHub Actions workflow (`.github/workflows/deploy.yml`):
+- Triggers on push to `main`
+- Authenticates via `GCP_SA_KEY` secret (service account JSON)
+- Deploys to Cloud Run using `google-github-actions/deploy-cloudrun`
 
-### Production (via Secret Manager)
-- `ANTHROPIC_API_KEY` - Claude API key
-- `GOOGLE_CLIENT_ID` - OAuth client ID
-- `GOOGLE_CLIENT_SECRET` - OAuth client secret
-- `NODE_ENV=production` - Enables secure cookies
+## Design
+
+**Theme:** Editorial (clean, magazine-style)
+- Background: `#f8f6f3` (warm cream)
+- Text: `#1a1a1a` (black)
+- Accent: `#c9463d` (coral) for active states
+- Typography: Playfair Display (serif headings), DM Sans (body)
