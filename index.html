@@ -1760,7 +1760,19 @@
 
             // Add event buttons
             html += `
-            <div style="margin-top: 24px; padding: 0 16px;">
+            <div style="margin-top: 24px; padding: 0 16px;">`;
+
+            if (this.isEditMode) {
+                html += `
+                <button class="add-event-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Event
+                </button>`;
+            } else {
+                html += `
                 <button class="add-event-btn" data-time="morning">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"/>
@@ -1788,8 +1800,9 @@
                         <line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
                     Add Night Event
-                </button>
-            </div>`;
+                </button>`;
+            }
+            html += `</div>`;
 
             this.container.innerHTML = html;
 
@@ -2336,37 +2349,46 @@
 
             dayData.items.splice(index, 1);
             this.editingEvent = null;
-            this.render();
 
-            const undoToast = this.showUndoToast(`Deleted "${itemName}"`, async () => {
-                dayData.items.splice(deletedIndex, 0, deletedItem);
+            if (this.isEditMode) {
+                // In edit mode, just track the deletion and re-render
+                if (!item.isNew) {
+                    this.pendingChanges.deleted.push(item);
+                }
                 this.render();
-            });
-
-            setTimeout(async () => {
-                if (undoToast.undone) return;
-
-                try {
-                    const response = await fetch('/api/itinerary/item', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            day: deletedDay,
-                            index: deletedIndex
-                        })
-                    });
-
-                    if (!response.ok) throw new Error('Delete failed');
-
-                    const { json } = await response.json();
-                    this.data = json;
-                } catch (err) {
-                    console.error('Delete error:', err);
+            } else {
+                // Original behavior: show undo toast and delete via API
+                this.render();
+                const undoToast = this.showUndoToast(`Deleted "${itemName}"`, async () => {
                     dayData.items.splice(deletedIndex, 0, deletedItem);
                     this.render();
-                    showToast('Failed to delete event', 'error');
-                }
-            }, 3000);
+                });
+
+                setTimeout(async () => {
+                    if (undoToast.undone) return;
+
+                    try {
+                        const response = await fetch('/api/itinerary/item', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                day: deletedDay,
+                                index: deletedIndex
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('Delete failed');
+
+                        const { json } = await response.json();
+                        this.data = json;
+                    } catch (err) {
+                        console.error('Delete error:', err);
+                        dayData.items.splice(deletedIndex, 0, deletedItem);
+                        this.render();
+                        showToast('Failed to delete event', 'error');
+                    }
+                }, 3000);
+            }
         }
 
         showUndoToast(message, onUndo) {
@@ -2399,8 +2421,13 @@
             return state;
         }
 
-        addNewEvent(time) {
+        addNewEvent(time = null) {
             const dayData = this.data.days[this.selectedDay - 1];
+
+            // If in edit mode and no time specified, add at end with default time
+            if (this.isEditMode && !time) {
+                time = 'evening'; // default time for new events in edit mode
+            }
 
             const timeOrder = ['morning', 'afternoon', 'evening', 'night'];
             const targetOrder = timeOrder.indexOf(time);
@@ -2426,8 +2453,16 @@
             };
 
             dayData.items.splice(insertIndex, 0, newItem);
-            this.editingEvent = insertIndex;
-            this.render();
+
+            if (this.isEditMode) {
+                // Track new item
+                this.pendingChanges.added.push(newItem);
+                this.render();
+            } else {
+                // Original behavior: enter edit for this single item
+                this.editingEvent = insertIndex;
+                this.render();
+            }
         }
     }
 
