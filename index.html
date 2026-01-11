@@ -869,6 +869,87 @@
             }
         }
 
+        /* ========== EDIT MODE ========== */
+        /* Edit mode indicator */
+        .event-list.edit-mode {
+            background: rgba(201, 70, 61, 0.02);
+        }
+
+        /* Edit Day button in header */
+        .cal-header-edit-btn {
+            padding: 10px 16px;
+            background: transparent;
+            border: 1px solid var(--timeline-line);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .cal-header-edit-btn:hover {
+            background: var(--bg-elevated);
+            border-color: var(--accent-dim);
+            color: var(--text-primary);
+        }
+
+        .cal-header-edit-btn.active {
+            background: var(--coral);
+            border-color: var(--coral);
+            color: var(--bg-deep);
+        }
+
+        /* Done button (save and exit edit mode) */
+        .cal-edit-done-btn {
+            position: fixed;
+            top: calc(var(--nav-height) + 16px);
+            right: 24px;
+            padding: 12px 24px;
+            background: var(--coral);
+            border: none;
+            border-radius: 10px;
+            color: var(--bg-deep);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.2s ease;
+            display: none;
+        }
+
+        .cal-edit-done-btn.visible {
+            display: block;
+        }
+
+        .cal-edit-done-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(201, 70, 61, 0.3);
+        }
+
+        .cal-edit-done-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Mobile adjustments for edit buttons */
+        @media (max-width: 768px) {
+            .cal-header-edit-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .cal-edit-done-btn {
+                padding: 10px 18px;
+                font-size: 13px;
+                right: 16px;
+                top: 16px;
+            }
+        }
+
         /* ========== CHAT VIEW ========== */
         #view-chat {
             display: none;
@@ -1246,11 +1327,15 @@
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Edit Mode Done Button -->
+    <button id="cal-done-btn" class="cal-edit-done-btn">Done</button>
+
     <!-- ========== CALENDAR VIEW ========== -->
     <div id="view-calendar" class="view active visible">
         <header class="cal-header">
             <span class="cal-header-brand">NYC Jan 14-18</span>
             <span id="cal-current-day" class="cal-header-day">Tuesday, Jan 14</span>
+            <button id="cal-edit-btn" class="cal-header-edit-btn" aria-label="Edit day">Edit</button>
         </header>
 
         <nav class="day-pills" id="day-pills">
