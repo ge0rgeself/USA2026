@@ -142,6 +142,10 @@ app.post('/api/chat', requireAuth, async (req, res) => {
   try {
     const { message } = req.body;
 
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Message cannot be empty' });
+    }
+
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
