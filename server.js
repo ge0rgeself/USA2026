@@ -323,6 +323,49 @@ function migrateToStatusField(itinerary) {
   return itinerary;
 }
 
+/**
+ * Migrate description field to prompt field
+ */
+function migrateDescriptionToPrompt(data) {
+  if (!data) return data;
+
+  let migrationCount = 0;
+
+  // Migrate hotel
+  if (data.hotel && data.hotel.description && !data.hotel.prompt) {
+    data.hotel.prompt = data.hotel.description;
+    migrationCount++;
+  }
+
+  // Migrate days
+  if (data.days) {
+    data.days.forEach(day => {
+      day.items?.forEach(item => {
+        if (item.description && !item.prompt) {
+          item.prompt = item.description;
+          migrationCount++;
+        }
+      });
+    });
+  }
+
+  // Migrate reservations
+  if (data.reservations) {
+    data.reservations.forEach(res => {
+      if (res.description && !res.prompt) {
+        res.prompt = res.description;
+        migrationCount++;
+      }
+    });
+  }
+
+  if (migrationCount > 0) {
+    console.log(`Migrated ${migrationCount} items: description -> prompt`);
+  }
+
+  return data;
+}
+
 async function loadItinerary() {
   try {
     // Try GCS JSON first with timeout
@@ -335,7 +378,8 @@ async function loadItinerary() {
 
     if (data) {
       itineraryData = data;
-      // Apply migration to ensure consistent format
+      // Apply migrations to ensure consistent format
+      itineraryData = migrateDescriptionToPrompt(itineraryData);
       itineraryData = migrateToStatusField(itineraryData);
       console.log('Itinerary loaded from GCS JSON');
       return;
@@ -349,7 +393,8 @@ async function loadItinerary() {
     const txt = await readItinerary();
     const parsed = parseItinerary(txt);
     itineraryData = convertToNewFormat(parsed);
-    // Apply migration to ensure consistent format
+    // Apply migrations to ensure consistent format
+    itineraryData = migrateDescriptionToPrompt(itineraryData);
     itineraryData = migrateToStatusField(itineraryData);
     console.log('Itinerary loaded from txt, converted to new format');
     // Save to GCS in new format
