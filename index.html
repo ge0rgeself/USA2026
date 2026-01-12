@@ -464,6 +464,14 @@
             content: '💡 ';
         }
 
+
+        .event-hook {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
         .event-meta {
             color: var(--text-secondary);
             font-size: 13px;
@@ -2838,8 +2846,10 @@
                             ${place.price ? `<span>${this.escapeHtml(place.price)}</span>` : ''}
                         </div>
                     ` : ''}
-                    ${place?.tips ? `
-                        <div class="event-tips">${this.escapeHtml(place.tips)}</div>
+                    ${place?.tip ? `
+                        <div class="event-tips">${this.escapeHtml(place.tip)}</div>
+                    ` : place?.hook ? `
+                        <div class="event-hook">${this.escapeHtml(place.hook)}</div>
                     ` : ''}
                     ${place?.waypoints && place.waypoints.length > 0 ? `
                         <div class="event-waypoints">
