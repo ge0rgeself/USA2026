@@ -279,6 +279,44 @@ function mergeWithExistingEnrichments(parsed, existingData) {
   return newData;
 }
 
+/**
+ * Migrate old fallback/optional boolean flags to status field
+ */
+function migrateToStatusField(itinerary) {
+  if (!itinerary || !itinerary.days) return itinerary;
+
+  let migrationCount = 0;
+
+  itinerary.days.forEach(day => {
+    if (!day.items) return;
+    day.items.forEach(item => {
+      // Skip if already has status field
+      if (item.status) return;
+
+      // Migrate from boolean flags
+      if (item.fallback) {
+        item.status = 'backup';
+        migrationCount++;
+      } else if (item.optional) {
+        item.status = 'optional';
+        migrationCount++;
+      } else {
+        item.status = 'primary';
+      }
+
+      // Clean up old flags
+      delete item.fallback;
+      delete item.optional;
+    });
+  });
+
+  if (migrationCount > 0) {
+    console.log(`Migrated ${migrationCount} items to status field`);
+  }
+
+  return itinerary;
+}
+
 async function loadItinerary() {
   try {
     // Try GCS JSON first with timeout
@@ -291,6 +329,8 @@ async function loadItinerary() {
 
     if (data) {
       itineraryData = data;
+      // Apply migration to ensure consistent format
+      itineraryData = migrateToStatusField(itineraryData);
       console.log('Itinerary loaded from GCS JSON');
       return;
     }
@@ -303,6 +343,8 @@ async function loadItinerary() {
     const txt = await readItinerary();
     const parsed = parseItinerary(txt);
     itineraryData = convertToNewFormat(parsed);
+    // Apply migration to ensure consistent format
+    itineraryData = migrateToStatusField(itineraryData);
     console.log('Itinerary loaded from txt, converted to new format');
     // Save to GCS in new format
     await writeItineraryJson(itineraryData);
