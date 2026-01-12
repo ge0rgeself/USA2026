@@ -3251,12 +3251,51 @@
             input.disabled = true;
 
             try {
+                // First, interpret the prompt
+                const dayData = this.data.days[this.selectedDay - 1];
+                const interpretResponse = await fetch('/api/interpret', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        referenceDay: this.selectedDay - 1,
+                        existingEvents: dayData.items.map(it => ({
+                            day: it.day || dayData.date,
+                            time: it.time,
+                            description: it.description
+                        }))
+                    })
+                });
+
+                if (!interpretResponse.ok) throw new Error('Failed to interpret prompt');
+
+                const interpreted = await interpretResponse.json();
+
+                if (interpreted.error || interpreted.needsClarification) {
+                    throw new Error(interpreted.error || 'Could not interpret prompt - please be more specific');
+                }
+
+                // Determine target day
+                let targetDayIndex = this.selectedDay - 1;
+                if (interpreted.day) {
+                    const targetDay = this.data.days.find(d => d.date === interpreted.day);
+                    if (targetDay) {
+                        targetDayIndex = this.data.days.indexOf(targetDay);
+                    }
+                }
+
+                // Save the new event
                 const response = await fetch('/api/itinerary/item', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        prompt,
-                        defaultDay: this.selectedDay - 1
+                        day: targetDayIndex,
+                        item: {
+                            time: interpreted.time,
+                            timeType: interpreted.timeType,
+                            description: interpreted.description,
+                            status: interpreted.status || 'primary'
+                        }
                     })
                 });
 
@@ -3269,6 +3308,12 @@
                 this.data = result.json;
                 this.isAddingEvent = false;
                 showToast('Event added', 'success');
+
+                // Start polling for enrichment if needed
+                if (this.checkForPendingEnrichments()) {
+                    this.startPolling();
+                }
+
                 this.render();
             } catch (error) {
                 showToast(error.message, 'error');
@@ -3296,61 +3341,118 @@
             if (this.editingEvent === null) return;
 
             const row = this.container.querySelector(`[data-event="${index}"]`);
-            const timeInput = row?.querySelector('[data-field="time"]');
-            const descInput = row?.querySelector('[data-field="description"]');
+            const promptInput = row?.querySelector('[data-field="prompt"]');
+            const prompt = promptInput?.value?.trim();
 
-            const time = timeInput?.value?.trim() || 'evening';
-            const description = descInput?.value?.trim();
+            // Get selected status
+            const statusRadio = row?.querySelector(`input[name="status-${index}"]:checked`);
+            const manualStatus = statusRadio?.value || 'primary';
+
+            if (!prompt) {
+                showToast('Please enter an event description', 'error');
+                return;
+            }
 
             const dayData = this.data.days[this.selectedDay - 1];
             const item = dayData.items[index];
             const isNew = item?.isNew;
-
-            // If description is empty, cancel or delete
-            if (!description) {
-                if (isNew) {
-                    dayData.items.splice(index, 1);
-                }
-                this.cancelEdit();
-                return;
-            }
-
-            // Build the parsed item
-            const parsed = {
-                time: time,
-                description: description,
-                fallback: item?.fallback || false,
-                optional: item?.optional || false
-            };
 
             // Show processing state
             row.classList.remove('editing');
             row.classList.add('processing');
 
             try {
-                const endpoint = '/api/itinerary/item';
-                const method = isNew ? 'POST' : 'PATCH';
-                const body = isNew
-                    ? { day: this.selectedDay - 1, item: parsed }
-                    : { day: this.selectedDay - 1, index: index, item: parsed };
-
-                const response = await fetch(endpoint, {
-                    method: method,
+                // First, interpret the prompt via the interpreter endpoint
+                const interpretResponse = await fetch('/api/interpret', {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        referenceDay: this.selectedDay - 1,
+                        existingEvents: dayData.items.map(it => ({
+                            day: it.day || dayData.date,
+                            time: it.time,
+                            description: it.description
+                        }))
+                    })
                 });
 
-                if (!response.ok) throw new Error('Save failed');
+                if (!interpretResponse.ok) throw new Error('Failed to interpret prompt');
 
-                const { json } = await response.json();
-                this.data = json;
+                const interpreted = await interpretResponse.json();
 
-                // Brief morph animation
+                if (interpreted.error || interpreted.needsClarification) {
+                    throw new Error(interpreted.error || 'Could not interpret prompt - please be more specific');
+                }
+
+                // Apply manual status override
+                interpreted.status = manualStatus;
+
+                // Check if day changed
+                let targetDayIndex = this.selectedDay - 1;
+                if (interpreted.day) {
+                    // Find the target day index by matching the date
+                    const targetDay = this.data.days.find(d => d.date === interpreted.day);
+                    if (targetDay) {
+                        targetDayIndex = this.data.days.indexOf(targetDay);
+                    }
+                }
+
+                if (targetDayIndex !== this.selectedDay - 1 && interpreted.day) {
+                    // Day changed - delete from current, add to new
+                    // Delete from current day
+                    await fetch('/api/itinerary/item', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ day: this.selectedDay - 1, index: index })
+                    });
+
+                    // Add to new day
+                    const addResponse = await fetch('/api/itinerary/item', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            day: targetDayIndex,
+                            item: {
+                                time: interpreted.time,
+                                timeType: interpreted.timeType,
+                                description: interpreted.description,
+                                status: interpreted.status
+                            }
+                        })
+                    });
+
+                    if (!addResponse.ok) throw new Error('Failed to move event');
+                    const { json } = await addResponse.json();
+                    this.data = json;
+                } else {
+                    // Same day - update in place
+                    const patchResponse = await fetch('/api/itinerary/item', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            day: this.selectedDay - 1,
+                            index: index,
+                            item: {
+                                time: interpreted.time,
+                                timeType: interpreted.timeType,
+                                description: interpreted.description,
+                                status: interpreted.status
+                            }
+                        })
+                    });
+
+                    if (!patchResponse.ok) throw new Error('Failed to save event');
+                    const { json } = await patchResponse.json();
+                    this.data = json;
+                }
+
+                // Clear edit state
                 this.editingEvent = null;
                 this.editState = null;
                 this.render();
 
-                // Start polling if there are pending enrichments (new item may need enrichment)
+                // Start polling if there are pending enrichments
                 if (this.checkForPendingEnrichments()) {
                     this.startPolling();
                 }
@@ -3364,11 +3466,13 @@
                     }
                 }, 10);
 
+                showToast('Event updated', 'success');
+
             } catch (err) {
                 console.error('Save error:', err);
                 row.classList.remove('processing');
                 row.classList.add('editing');
-                showToast('Failed to save', 'error');
+                showToast(err.message || 'Failed to save', 'error');
             }
         }
 

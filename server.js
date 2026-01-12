@@ -653,11 +653,11 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
 
     // Create new item (with null enrichment for background processing)
     const newItem = {
-      time: item.time || 'morning',
+      time: item.time || null,
+      timeType: item.timeType || 'none',
       description: item.description,
       type: 'activity',
-      fallback: item.fallback || false,
-      optional: item.optional || false,
+      status: item.status || 'primary',
       enrichment: null
     };
 
