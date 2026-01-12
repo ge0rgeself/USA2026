@@ -319,28 +319,6 @@
             margin: 0 auto;
         }
 
-        /* Time Divider */
-        .time-divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 0 8px;
-        }
-
-        .time-divider-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .time-divider-line {
-            flex: 1;
-            height: 1px;
-            background: var(--timeline-line);
-        }
-
         /* Event Row */
         .event-row {
             position: relative;
@@ -2648,32 +2626,46 @@
 
         renderDayItems(items) {
             let html = '';
-            let lastTimeGroup = null;
-            let eventIndex = 0;
 
-            for (const item of items) {
-                // Time divider
-                const timeGroup = this.getTimeGroup(item.time);
-                if (timeGroup && timeGroup !== lastTimeGroup) {
-                    html += `
-                    <div class="time-divider">
-                        <span class="time-divider-label">${timeGroup}</span>
-                        <div class="time-divider-line"></div>
-                    </div>`;
-                    lastTimeGroup = timeGroup;
-                }
+            // Sort items by time
+            const sorted = [...items].sort((a, b) => this.compareEventTimes(a.time, b.time));
 
-                // Render edit form or event row
-                const isEditing = this.editingEvent === eventIndex;
+            sorted.forEach((item, index) => {
+                // Find original index for edit/expand state
+                const originalIndex = items.findIndex(i => i === item);
+                const isEditing = this.editingEvent === originalIndex;
+
                 if (isEditing) {
-                    html += this.renderEditForm(item, eventIndex);
+                    html += this.renderEditForm(item, originalIndex);
                 } else {
-                    html += this.renderEventRow(item, eventIndex);
+                    html += this.renderEventRow(item, originalIndex);
                 }
-                eventIndex++;
-            }
+            });
 
             return html;
+        }
+
+        compareEventTimes(timeA, timeB) {
+            const order = { 'morning': 1, 'breakfast': 1, 'lunch': 2, 'afternoon': 2, 'evening': 3, 'dinner': 3, 'late night': 4, 'night': 4 };
+
+            const parseTime = (t) => {
+                if (!t) return 999; // No time goes last
+                const tLower = t.toLowerCase();
+                if (order[tLower]) return order[tLower] * 100;
+                // Parse specific time like "7:30pm"
+                const match = tLower.match(/(\d+):?(\d*)\s*(am|pm)?/);
+                if (match) {
+                    let hour = parseInt(match[1]);
+                    const min = parseInt(match[2]) || 0;
+                    const isPM = match[3] === 'pm';
+                    if (isPM && hour !== 12) hour += 12;
+                    if (!isPM && hour === 12) hour = 0;
+                    return hour * 60 + min;
+                }
+                return 500; // Unknown format in middle
+            };
+
+            return parseTime(timeA) - parseTime(timeB);
         }
 
         renderEventRow(item, index) {
