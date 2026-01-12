@@ -192,6 +192,11 @@ function setNestedValue(obj, path, value) {
  * Run background enrichment
  */
 async function runBackgroundEnrichment() {
+  if (!genAINew) {
+    console.error('Background enrichment skipped: Gemini API not configured');
+    return;
+  }
+
   const items = findItemsNeedingEnrichment(itineraryData);
 
   if (items.length === 0) {
@@ -200,9 +205,11 @@ async function runBackgroundEnrichment() {
   }
 
   console.log(`Background enriching ${items.length} items...`);
+  console.log('Items to enrich:', items.map(i => i.description).join(', '));
 
   try {
     const enrichments = await placeService.enrichBatch(genAINew, items);
+    console.log(`Got ${enrichments.length} enrichments`);
 
     // Apply enrichments to data
     items.forEach((item, idx) => {
@@ -212,10 +219,11 @@ async function runBackgroundEnrichment() {
 
     // Save to GCS
     await writeItineraryJson(itineraryData);
-    console.log('Background enrichment complete');
+    console.log('Background enrichment complete and saved to GCS');
 
   } catch (err) {
     console.error('Background enrichment failed:', err.message);
+    console.error('Stack:', err.stack);
   }
 }
 
