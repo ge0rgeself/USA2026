@@ -496,7 +496,7 @@ app.post('/api/chat', requireAuth, async (req, res) => {
 
     // Use Oscar agent if available, otherwise fall back to Claude
     if (oscarAgent) {
-      console.log('Using Oscar agent (Gemini 3 Flash)');
+      console.log('Using Oscar agent (Gemini 2.5 Flash)');
 
       const result = await oscarAgent.chat(message, {
         chatHistory: req.session.chatHistory,
@@ -515,7 +515,7 @@ app.post('/api/chat', requireAuth, async (req, res) => {
       res.json({
         response: result.response,
         toolsUsed: result.toolsUsed,
-        engine: 'gemini-3-flash'
+        engine: 'gemini-2.5-flash'
       });
     } else {
       // Fallback to Claude (legacy)
