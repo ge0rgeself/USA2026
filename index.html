@@ -421,6 +421,16 @@
             flex-shrink: 0;
         }
 
+        .event-badge.backup {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .event-badge.optional {
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+
         .event-neighborhood {
             font-size: 12px;
             color: var(--text-secondary);
@@ -1669,6 +1679,11 @@
             border-left: 3px solid var(--teal);
         }
 
+        .event-row.secondary {
+            opacity: 0.75;
+            border-left: 3px dashed var(--accent-dim);
+        }
+
         .event-row.fallback {
             opacity: 0.75;
             border-left: 3px dashed var(--accent-dim);
@@ -2678,9 +2693,13 @@
             const neighborhood = this.extractNeighborhood(place?.address);
             const typeClass = item.type || 'activity';
 
+            // Handle both new status field and old fallback/optional booleans
+            const status = item.status || (item.fallback ? 'backup' : item.optional ? 'optional' : 'primary');
+            const isSecondary = status !== 'primary';
+
             let badgeHtml = '';
-            if (item.fallback) badgeHtml = '<span class="event-badge">Backup</span>';
-            else if (item.optional) badgeHtml = '<span class="event-badge">Optional</span>';
+            if (status === 'backup') badgeHtml = '<span class="event-badge backup">BACKUP</span>';
+            else if (status === 'optional') badgeHtml = '<span class="event-badge optional">OPTIONAL</span>';
 
             // Determine time specificity class
             let timeClass = 'time-vague';
@@ -2697,8 +2716,7 @@
                 'event-row',
                 timeClass,
                 isExpanded ? 'expanded' : '',
-                item.fallback ? 'fallback' : '',
-                item.optional ? 'optional' : ''
+                isSecondary ? 'secondary' : ''
             ].filter(Boolean).join(' ');
 
             // Show loading indicator if enrichment pending
