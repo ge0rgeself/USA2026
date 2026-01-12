@@ -1739,104 +1739,110 @@
 
         .event-edit-form {
             display: none;
-            padding: 16px;
+            padding: 1rem;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
         .event-row.editing .event-edit-form {
-            display: block;
-        }
-
-        .event-edit-fields {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
         }
 
-        .event-edit-row {
+        .event-edit-input {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            font-size: 1rem;
+            border: 1px solid var(--timeline-line);
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .event-edit-input:focus {
+            outline: none;
+            border-color: var(--coral);
+            box-shadow: 0 0 0 2px rgba(201, 70, 61, 0.1);
+        }
+
+        .event-edit-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .event-edit-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .event-edit-status {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .event-edit-field {
-            flex: 1;
-        }
-
-        .event-edit-field label {
-            display: block;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        .event-edit-field input,
-        .event-edit-field select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--timeline-line);
-            border-radius: 8px;
-            background: var(--bg-main);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 15px;
-            outline: none;
-            transition: border-color 0.15s ease;
-        }
-
-        .event-edit-field input:focus,
-        .event-edit-field select:focus {
-            border-color: var(--coral);
-        }
-
-        .event-edit-field input::placeholder {
+        .status-label {
+            font-size: 0.875rem;
             color: var(--text-secondary);
         }
 
-        .event-edit-field.time-field {
-            flex: 0 0 100px;
+        .status-option {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .status-option input[type="radio"] {
+            cursor: pointer;
         }
 
         .event-edit-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 16px;
-            padding-top: 12px;
+            gap: 0.5rem;
+            padding-top: 0.5rem;
             border-top: 1px solid var(--timeline-line);
         }
 
-        .event-edit-save {
-            padding: 10px 20px;
-            background: var(--coral);
-            border: none;
-            border-radius: 8px;
-            color: var(--bg-deep);
-            font-size: 14px;
-            font-weight: 500;
+        .btn-cancel,
+        .btn-save,
+        .btn-delete {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: 4px;
             cursor: pointer;
+            font-family: inherit;
             transition: all 0.15s ease;
         }
 
-        .event-edit-save:hover {
-            background: #b33d35;
-        }
-
-        .event-edit-cancel {
-            padding: 10px 16px;
-            background: transparent;
+        .btn-cancel {
+            background: none;
             border: 1px solid var(--timeline-line);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.15s ease;
+            color: var(--text-primary);
         }
 
-        .event-edit-cancel:hover {
-            border-color: var(--text-secondary);
-            color: var(--text-primary);
+        .btn-cancel:hover {
+            background-color: var(--bg-elevated);
+        }
+
+        .btn-save {
+            background-color: var(--coral);
+            border: none;
+            color: white;
+        }
+
+        .btn-save:hover {
+            opacity: 0.9;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+
+        .btn-delete:hover {
+            color: #dc2626;
         }
 
         .event-edit-delete {
@@ -2813,44 +2819,46 @@
         }
 
         renderEditForm(item, index) {
-            const place = item.place;
-            const name = place?.name || item.description || '';
-            const time = item.time || '';
+            const enrichment = item.enrichment !== undefined ? item.enrichment : item.place;
+            const name = enrichment?.name || item.description || '';
+            const status = item.status || (item.fallback ? 'backup' : item.optional ? 'optional' : 'primary');
             const isNew = item.isNew || false;
+
+            // Combine time and description for the prompt input
+            const timeAndDesc = item.time ? `${name} around ${item.time}` : name;
 
             return `
             <div class="event-row editing" data-event="${index}">
                 <div class="event-row-collapsed" style="display:none"></div>
                 <div class="event-row-expanded" style="display:none"></div>
                 <div class="event-edit-form">
-                    <div class="event-edit-fields">
-                        <div class="event-edit-row">
-                            <div class="event-edit-field time-field">
-                                <label>Time</label>
-                                <input type="text"
-                                       data-field="time"
-                                       value="${this.escapeHtml(time)}"
-                                       placeholder="7pm">
-                            </div>
-                            <div class="event-edit-field">
-                                <label>What</label>
-                                <input type="text"
-                                       data-field="description"
-                                       value="${this.escapeHtml(name)}"
-                                       placeholder="Dinner at Carbone, Greenwich Village">
-                            </div>
-                        </div>
+                    <input type="text"
+                           class="event-edit-input"
+                           data-field="prompt"
+                           value="${this.escapeHtml(timeAndDesc)}"
+                           placeholder="What's the plan?">
+                    <div class="event-edit-hint">e.g., "dinner at Carbone around 7pm"</div>
+
+                    <div class="event-edit-status">
+                        <span class="status-label">Status:</span>
+                        <label class="status-option">
+                            <input type="radio" name="status-${index}" value="primary" ${status === 'primary' ? 'checked' : ''}>
+                            <span>Primary</span>
+                        </label>
+                        <label class="status-option">
+                            <input type="radio" name="status-${index}" value="backup" ${status === 'backup' ? 'checked' : ''}>
+                            <span>Backup</span>
+                        </label>
+                        <label class="status-option">
+                            <input type="radio" name="status-${index}" value="optional" ${status === 'optional' ? 'checked' : ''}>
+                            <span>Optional</span>
+                        </label>
                     </div>
+
                     <div class="event-edit-actions">
-                        <div>
-                            ${!isNew ? `
-                            <button class="event-edit-delete" type="button">Delete</button>
-                            ` : ''}
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="event-edit-cancel" type="button">Cancel</button>
-                            <button class="event-edit-save" type="button">Save</button>
-                        </div>
+                        <button class="btn-cancel" type="button">Cancel</button>
+                        <button class="btn-save" type="button">Save</button>
+                        ${!isNew ? `<button class="btn-delete" type="button">Delete...</button>` : ''}
                     </div>
                 </div>
             </div>`;
