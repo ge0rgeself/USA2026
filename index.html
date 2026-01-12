@@ -1723,6 +1723,40 @@
             background: var(--bg-card);
         }
 
+        /* Add Event Trigger */
+        .event-add-trigger {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.15s, background-color 0.15s;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .event-add-trigger:hover {
+            color: var(--coral);
+            background-color: var(--bg-elevated);
+        }
+
+        .add-icon {
+            font-size: 1.25rem;
+            font-weight: 300;
+        }
+
+        .event-row.adding {
+            background-color: var(--bg-card);
+            border: 2px dashed var(--timeline-line);
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .event-row.adding:focus-within {
+            border-color: var(--coral);
+        }
+
         .event-row.editing {
             border-color: var(--coral);
             border-width: 2px;
@@ -2543,11 +2577,8 @@
             // Render day items
             html += this.renderDayItems(dayData.items);
 
-            // Add ghost card for adding new events
-            html += `
-            <div class="ghost-card" data-action="add">
-                <span>Add something...</span>
-            </div>`;
+            // Add event card
+            html += this.renderAddEventCard();
 
             this.container.innerHTML = html;
 
@@ -2687,6 +2718,33 @@
             };
 
             return parseTime(timeA) - parseTime(timeB);
+        }
+
+        renderAddEventCard() {
+            if (this.isAddingEvent) {
+                return `
+                <div class="event-row adding" data-event="new">
+                    <div class="event-edit-form">
+                        <input type="text"
+                               class="event-edit-input"
+                               data-field="new-prompt"
+                               placeholder="What's the plan?"
+                               autofocus>
+                        <div class="event-edit-hint">e.g., "dinner at Carbone around 7pm"</div>
+
+                        <div class="event-edit-actions">
+                            <button class="btn-cancel" type="button">Cancel</button>
+                            <button class="btn-save" type="button">Add</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            return `
+            <div class="event-add-trigger" data-action="add">
+                <span class="add-icon">+</span>
+                <span>Add event...</span>
+            </div>`;
         }
 
         renderEventRow(item, index) {
