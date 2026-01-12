@@ -723,6 +723,48 @@ app.delete('/api/itinerary/item', requireAuth, async (req, res) => {
   }
 });
 
+// POST endpoint for re-enriching a specific item
+app.post('/api/itinerary/enrich', requireAuth, async (req, res) => {
+  try {
+    const { day, index } = req.body;
+
+    if (typeof day !== 'number' || typeof index !== 'number') {
+      return res.status(400).json({ error: 'Missing day or index' });
+    }
+
+    if (!itineraryData.days[day]) {
+      return res.status(404).json({ error: 'Day not found' });
+    }
+
+    const item = itineraryData.days[day].items[index];
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Return immediately with current data
+    res.json({ success: true, json: itineraryData });
+
+    // Trigger enrichment for this specific item
+    try {
+      const enrichments = await placeService.enrichBatch(genAINew, [item]);
+      if (enrichments && enrichments.length > 0) {
+        item.enrichment = enrichments[0];
+        item.enrichmentError = false;
+        await writeItineraryJson(itineraryData);
+        console.log(`Re-enriched item: ${item.description}`);
+      }
+    } catch (err) {
+      console.error('Failed to re-enrich item:', err.message);
+      item.enrichmentError = true;
+      await writeItineraryJson(itineraryData);
+    }
+
+  } catch (err) {
+    console.error('Enrich endpoint error:', err);
+    res.status(500).json({ error: 'Failed to enrich item' });
+  }
+});
+
 app.post('/api/chat', requireAuth, async (req, res) => {
   try {
     const { message } = req.body;

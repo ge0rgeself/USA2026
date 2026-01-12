@@ -402,6 +402,40 @@
         .event-hook.loading {
             color: #888;
             font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .event-hook.loading .spinner {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border: 2px solid #ccc;
+            border-top-color: #666;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        .event-hook.error {
+            color: #d97706;
+            font-style: italic;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-color: #d97706;
+            text-decoration-style: dotted;
+        }
+
+        .event-hook.error:hover {
+            color: #dc2626;
+            text-decoration-color: #dc2626;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @media (max-width: 600px) {
@@ -2624,6 +2658,12 @@
                         this.startEdit(index);
                         return;
                     }
+                    // If clicking error message, retry enrichment
+                    if (e.target.closest('.event-hook.error')) {
+                        e.stopPropagation();
+                        this.retryEnrichment(index);
+                        return;
+                    }
                     // Prevent event from bubbling (fixes mobile double-fire issue)
                     e.stopPropagation();
                     // Toggle expand/collapse
@@ -2842,6 +2882,7 @@
             // Handle both item.enrichment (new format) and item.place (old format)
             const enrichment = item.enrichment !== undefined ? item.enrichment : item.place;
             const isLoading = enrichment === null;
+            const hasError = item.enrichmentError === true;
             const place = enrichment || {};
             const name = place?.name || item.description;
             const neighborhood = this.extractNeighborhood(place?.address);
@@ -2870,15 +2911,20 @@
                 'event-row',
                 timeClass,
                 isExpanded ? 'expanded' : '',
-                isSecondary ? 'secondary' : ''
+                isSecondary ? 'secondary' : '',
+                isLoading ? 'enriching' : '',
+                hasError ? 'error' : ''
             ].filter(Boolean).join(' ');
 
-            // Show loading indicator if enrichment pending
-            const hookHtml = isLoading
-                ? '<span class="event-hook loading">Loading...</span>'
-                : place?.hook
-                    ? `<span class="event-hook${place?.needsDetails ? ' needs-details' : ''}">${this.escapeHtml(place.hook)}</span>`
-                    : '';
+            // Show loading indicator, error, or content
+            let hookHtml = '';
+            if (isLoading) {
+                hookHtml = '<span class="event-hook loading"><span class="spinner"></span>Enriching...</span>';
+            } else if (hasError) {
+                hookHtml = '<span class="event-hook error">⚠️ Couldn\'t enrich</span>';
+            } else if (place?.hook) {
+                hookHtml = `<span class="event-hook${place?.needsDetails ? ' needs-details' : ''}">${this.escapeHtml(place.hook)}</span>`;
+            }
 
             return `
             <div class="${rowClasses}" data-event="${index}">
@@ -3395,6 +3441,45 @@
                     showToast('Failed to delete event', 'error');
                 }
             }, 3000);
+        }
+
+        async retryEnrichment(index) {
+            const dayIndex = this.selectedDay - 1;
+            const dayData = this.data.days[dayIndex];
+            const item = dayData.items[index];
+
+            if (!item) return;
+
+            // Clear error state and set to loading
+            item.enrichmentError = false;
+            item.enrichment = null;
+            this.render();
+
+            try {
+                // Call enrichment endpoint
+                const response = await fetch('/api/itinerary/enrich', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        day: dayIndex,
+                        index: index,
+                        item: item
+                    })
+                });
+
+                if (!response.ok) throw new Error('Enrichment retry failed');
+
+                const { json } = await response.json();
+                this.data = json;
+                this.render();
+                showToast('Enrichment successful!', 'success');
+
+            } catch (err) {
+                console.error('Enrichment retry error:', err);
+                item.enrichmentError = true;
+                this.render();
+                showToast('Failed to enrich event', 'error');
+            }
         }
 
         showUndoToast(message, onUndo) {
