@@ -1879,6 +1879,38 @@
             color: #dc2626;
         }
 
+        /* Delete Confirmation */
+        .delete-confirm {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-left: auto;
+            font-size: 0.875rem;
+        }
+
+        .delete-confirm span {
+            color: #dc2626;
+        }
+
+        .btn-confirm-delete {
+            background-color: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn-cancel-delete {
+            background: none;
+            border: 1px solid var(--timeline-line);
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
         .event-edit-delete {
             padding: 10px 16px;
             background: transparent;
@@ -2621,12 +2653,29 @@
                     });
                 }
 
-                // Delete button
-                const deleteBtn = row.querySelector('.event-edit-delete');
+                // Delete button (show confirmation)
+                const deleteBtn = row.querySelector('.btn-delete');
                 if (deleteBtn) {
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        this.deleteEvent(index);
+                        this.confirmDelete(index);
+                    });
+                }
+
+                // Delete confirmation buttons
+                const confirmDeleteBtn = row.querySelector('.btn-confirm-delete');
+                if (confirmDeleteBtn) {
+                    confirmDeleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.executeDelete(index);
+                    });
+                }
+
+                const cancelDeleteBtn = row.querySelector('.btn-cancel-delete');
+                if (cancelDeleteBtn) {
+                    cancelDeleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.cancelDelete();
                     });
                 }
 
@@ -2648,9 +2697,50 @@
                 }
             });
 
-            // Ghost card click handler
+            // Ghost card click handler (legacy)
             this.container.querySelectorAll('.ghost-card').forEach(ghost => {
                 ghost.addEventListener('click', () => this.addNewEvent());
+            });
+
+            // Add event trigger click handler
+            this.container.querySelectorAll('.event-add-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => this.startAddEvent());
+            });
+
+            // Add event form handlers
+            this.container.querySelectorAll('.event-row.adding').forEach(() => {
+                // Add cancel button handler
+                const cancelBtn = this.container.querySelector('.event-row.adding .btn-cancel');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.cancelAdd();
+                    });
+                }
+
+                // Add save button handler
+                const saveBtn = this.container.querySelector('.event-row.adding .btn-save');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.saveNewEvent();
+                    });
+                }
+
+                // Focus and keyboard shortcuts on new-prompt input
+                const input = this.container.querySelector('[data-field="new-prompt"]');
+                if (input) {
+                    input.focus();
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            this.saveNewEvent();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            this.cancelAdd();
+                        }
+                    });
+                }
             });
         }
 
@@ -2916,7 +3006,13 @@
                     <div class="event-edit-actions">
                         <button class="btn-cancel" type="button">Cancel</button>
                         <button class="btn-save" type="button">Save</button>
-                        ${!isNew ? `<button class="btn-delete" type="button">Delete...</button>` : ''}
+                        ${!isNew ? (this.deleteConfirmingIndex === index ? `
+                            <div class="delete-confirm">
+                                <span>Delete this event?</span>
+                                <button class="btn-confirm-delete" type="button">Yes, delete</button>
+                                <button class="btn-cancel-delete" type="button">No, keep</button>
+                            </div>
+                        ` : `<button class="btn-delete" type="button">Delete...</button>`) : ''}
                     </div>
                 </div>
             </div>`;
@@ -3085,6 +3181,55 @@
             this.render();
         }
 
+        startAddEvent() {
+            this.isAddingEvent = true;
+            this.render();
+            // Focus will be set by event handlers in render()
+        }
+
+        cancelAdd() {
+            this.isAddingEvent = false;
+            this.render();
+        }
+
+        async saveNewEvent() {
+            const input = document.querySelector('[data-field="new-prompt"]');
+            const prompt = input?.value?.trim();
+
+            if (!prompt) {
+                showToast('Please enter an event description', 'error');
+                return;
+            }
+
+            // Show loading state
+            input.disabled = true;
+
+            try {
+                const response = await fetch('/api/itinerary/item', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt,
+                        defaultDay: this.selectedDay - 1
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to add event');
+                }
+
+                const result = await response.json();
+                this.data = result.json;
+                this.isAddingEvent = false;
+                showToast('Event added', 'success');
+                this.render();
+            } catch (error) {
+                showToast(error.message, 'error');
+                input.disabled = false;
+            }
+        }
+
         showSaveIndicator(text, success = false) {
             let indicator = document.querySelector('.save-indicator');
             if (!indicator) {
@@ -3181,11 +3326,32 @@
             }
         }
 
-        async deleteEvent(index) {
+        confirmDelete(index) {
+            this.deleteConfirmingIndex = index;
+            this.render();
+
+            // Auto-cancel after 5 seconds
+            if (this.deleteConfirmTimeout) clearTimeout(this.deleteConfirmTimeout);
+            this.deleteConfirmTimeout = setTimeout(() => {
+                this.deleteConfirmingIndex = null;
+                this.render();
+            }, 5000);
+        }
+
+        cancelDelete() {
+            if (this.deleteConfirmTimeout) clearTimeout(this.deleteConfirmTimeout);
+            this.deleteConfirmingIndex = null;
+            this.render();
+        }
+
+        async executeDelete(index) {
+            if (this.deleteConfirmTimeout) clearTimeout(this.deleteConfirmTimeout);
+            this.deleteConfirmingIndex = null;
+
             const dayIndex = this.selectedDay - 1;
             const dayData = this.data.days[dayIndex];
             const item = dayData.items[index];
-            const itemName = item.place?.name || item.description;
+            const itemName = item.enrichment?.name || item.description;
 
             // Deep copy the item for restoration
             const deletedItem = JSON.parse(JSON.stringify(item));
