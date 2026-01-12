@@ -303,8 +303,12 @@ async function loadItinerary() {
   }
 }
 
-// Load on startup
-loadItinerary();
+// Load on startup, then trigger background enrichment for any null items
+loadItinerary().then(() => {
+  runBackgroundEnrichment().catch(err =>
+    console.error('Startup enrichment error:', err.message)
+  );
+});
 
 // Itinerary manager for Oscar agent
 const itineraryManager = {
