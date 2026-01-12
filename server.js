@@ -93,45 +93,213 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const client = new Anthropic();
 
-// Gemini client for Maps grounding enrichment (old SDK for enricher)
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = process.env.GOOGLE_GEMINI_API_KEY
-  ? new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
-  : null;
-
-// New Gemini SDK for Oscar agent
+// Gemini SDK for Oscar agent and enrichment
 const { GoogleGenAI } = require('@google/genai');
 const genAINew = process.env.GOOGLE_GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY })
   : null;
 
-// Import parser, enricher, storage, and research
+// Import parser, storage, place-service, and oscar agent
 const { parseItinerary } = require('./lib/parser');
-const { enrichItinerary } = require('./lib/enricher');
-const { readItinerary, writeItinerary, writeItineraryJson } = require('./lib/storage');
-const { needsPlaceResearch, researchPlaces, formatResearchForChat } = require('./lib/gemini-research');
+const { readItinerary, writeItinerary, readItineraryJson, writeItineraryJson } = require('./lib/storage');
+const placeService = require('./lib/place-service');
 const { createOscarAgent } = require('./lib/oscar-agent');
 
-// Load itinerary files
-let itineraryTxt = '';
-let itineraryJson = null;
+// Itinerary data (new unified format)
+let itineraryData = null;
+
+/**
+ * Convert parsed itinerary to new format with enrichment field
+ */
+function convertToNewFormat(parsed) {
+  return {
+    hotel: parsed.hotel ? {
+      description: parsed.hotel,
+      enrichment: null
+    } : null,
+    days: parsed.days.map(day => ({
+      date: day.date,
+      dayOfWeek: day.dayOfWeek,
+      title: day.title,
+      items: day.items.map(item => ({
+        time: item.time,
+        description: item.description,
+        type: item.type,
+        fallback: item.fallback,
+        optional: item.optional,
+        enrichment: null
+      }))
+    })),
+    reservations: parsed.reservations.map(res => ({
+      description: res,
+      enrichment: null
+    })),
+    notes: parsed.notes
+  };
+}
+
+/**
+ * Find items needing enrichment
+ */
+function findItemsNeedingEnrichment(data) {
+  const items = [];
+
+  if (data.hotel && !data.hotel.enrichment) {
+    items.push({
+      description: data.hotel.description,
+      context: 'hotel',
+      path: ['hotel']
+    });
+  }
+
+  data.days.forEach((day, dayIdx) => {
+    day.items.forEach((item, itemIdx) => {
+      if (!item.enrichment) {
+        items.push({
+          description: item.description,
+          context: `${day.date} ${day.title} (${item.type})`,
+          path: ['days', dayIdx, 'items', itemIdx]
+        });
+      }
+    });
+  });
+
+  data.reservations.forEach((res, idx) => {
+    if (!res.enrichment) {
+      items.push({
+        description: res.description,
+        context: 'reservation',
+        path: ['reservations', idx]
+      });
+    }
+  });
+
+  return items;
+}
+
+/**
+ * Set nested value in object by path
+ */
+function setNestedValue(obj, path, value) {
+  let current = obj;
+  for (let i = 0; i < path.length - 1; i++) {
+    current = current[path[i]];
+  }
+  current[path[path.length - 1]] = value;
+}
+
+/**
+ * Run background enrichment
+ */
+async function runBackgroundEnrichment() {
+  const items = findItemsNeedingEnrichment(itineraryData);
+
+  if (items.length === 0) {
+    console.log('No items need enrichment');
+    return;
+  }
+
+  console.log(`Background enriching ${items.length} items...`);
+
+  try {
+    const enrichments = await placeService.enrichBatch(genAINew, items);
+
+    // Apply enrichments to data
+    items.forEach((item, idx) => {
+      const enrichment = enrichments[idx];
+      setNestedValue(itineraryData, [...item.path, 'enrichment'], enrichment);
+    });
+
+    // Save to GCS
+    await writeItineraryJson(itineraryData);
+    console.log('Background enrichment complete');
+
+  } catch (err) {
+    console.error('Background enrichment failed:', err.message);
+  }
+}
+
+/**
+ * Merge parsed data with existing enrichments
+ */
+function mergeWithExistingEnrichments(parsed, existingData) {
+  const newData = convertToNewFormat(parsed);
+
+  if (!existingData) return newData;
+
+  // Build map of description -> enrichment from existing data
+  const enrichmentMap = {};
+
+  if (existingData.hotel?.enrichment) {
+    enrichmentMap[existingData.hotel.description] = existingData.hotel.enrichment;
+  }
+
+  for (const day of (existingData.days || [])) {
+    for (const item of (day.items || [])) {
+      if (item.enrichment) {
+        enrichmentMap[item.description] = item.enrichment;
+      }
+    }
+  }
+
+  for (const res of (existingData.reservations || [])) {
+    if (res.enrichment) {
+      enrichmentMap[res.description] = res.enrichment;
+    }
+  }
+
+  // Apply existing enrichments to new data where descriptions match
+  if (newData.hotel && enrichmentMap[newData.hotel.description]) {
+    newData.hotel.enrichment = enrichmentMap[newData.hotel.description];
+  }
+
+  for (const day of newData.days) {
+    for (const item of day.items) {
+      if (enrichmentMap[item.description]) {
+        item.enrichment = enrichmentMap[item.description];
+      }
+    }
+  }
+
+  for (const res of newData.reservations) {
+    if (enrichmentMap[res.description]) {
+      res.enrichment = enrichmentMap[res.description];
+    }
+  }
+
+  return newData;
+}
 
 async function loadItinerary() {
   try {
-    itineraryTxt = await readItinerary();
-    const parsed = parseItinerary(itineraryTxt);
-    itineraryJson = await enrichItinerary(parsed, genAI);
-    writeItineraryJson(itineraryJson);
-    console.log('Itinerary loaded and enriched');
-  } catch (err) {
-    console.error('Error loading itinerary:', err);
-    // Fallback to local txt only
-    try {
-      itineraryTxt = fs.readFileSync('./itinerary.txt', 'utf-8');
-      itineraryJson = parseItinerary(itineraryTxt);
-    } catch (e) {
-      console.error('Failed to load itinerary.txt:', e);
+    // Try GCS JSON first with timeout
+    const data = await Promise.race([
+      readItineraryJson(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 5000)
+      )
+    ]);
+
+    if (data) {
+      itineraryData = data;
+      console.log('Itinerary loaded from GCS JSON');
+      return;
     }
+  } catch (err) {
+    console.warn('GCS JSON load failed:', err.message);
+  }
+
+  // Fallback: parse from txt if exists
+  try {
+    const txt = await readItinerary();
+    const parsed = parseItinerary(txt);
+    itineraryData = convertToNewFormat(parsed);
+    console.log('Itinerary loaded from txt, converted to new format');
+    // Save to GCS in new format
+    await writeItineraryJson(itineraryData);
+  } catch (err) {
+    console.warn('No itinerary found, starting empty');
+    itineraryData = { hotel: null, days: [], reservations: [], notes: [] };
   }
 }
 
@@ -152,9 +320,12 @@ const itineraryManager = {
 
     const normalizedDay = dayMap[day.toLowerCase()] || day;
 
+    // Generate txt from current data
+    const currentTxt = regenerateItineraryTxt(itineraryData);
+
     // Use Claude to intelligently update the txt file
     const updatePrompt = `Current itinerary:
-${itineraryTxt}
+${currentTxt}
 
 Action: ${action}
 Day: ${normalizedDay}
@@ -173,15 +344,22 @@ Make the minimal change needed. Do not add explanations.`;
 
     const newTxt = response.content[0].text.trim();
 
-    // Save and enrich
-    await writeItinerary(newTxt);
-    itineraryTxt = newTxt;
-
+    // Parse new txt
     const parsed = parseItinerary(newTxt);
-    itineraryJson = await enrichItinerary(parsed, genAI, itineraryJson);
-    writeItineraryJson(itineraryJson);
 
-    return { success: true, txt: itineraryTxt, json: itineraryJson };
+    // Merge with existing enrichments
+    itineraryData = mergeWithExistingEnrichments(parsed, itineraryData);
+
+    // Save
+    await writeItinerary(newTxt);
+    await writeItineraryJson(itineraryData);
+
+    // Trigger background enrichment for new items
+    runBackgroundEnrichment().catch(err =>
+      console.error('Background enrichment error:', err)
+    );
+
+    return { success: true, data: itineraryData };
   }
 };
 
@@ -197,8 +375,8 @@ function regenerateItineraryTxt(data) {
     // Hotel
     if (data.hotel) {
         txt += '# Hotel\n';
-        // Handle both string and enriched object formats
-        const hotelStr = typeof data.hotel === 'string' ? data.hotel : data.hotel.name;
+        // Handle both string and enriched object formats (new format uses .description)
+        const hotelStr = typeof data.hotel === 'string' ? data.hotel : (data.hotel.description || data.hotel.name);
         txt += hotelStr + '\n\n';
     }
 
@@ -206,8 +384,8 @@ function regenerateItineraryTxt(data) {
     if (data.reservations && data.reservations.length > 0) {
         txt += '# Reservations\n';
         data.reservations.forEach(r => {
-            // Handle both string and enriched object formats
-            const resStr = typeof r === 'string' ? r : r.name;
+            // Handle both string and enriched object formats (new format uses .description)
+            const resStr = typeof r === 'string' ? r : (r.description || r.name);
             txt += `- ${resStr}\n`;
         });
         txt += '\n';
@@ -290,7 +468,7 @@ Example day:
 - 8pm (optional): Brooklyn Brewery tour
 
 CURRENT ITINERARY:
-${itineraryTxt}
+${regenerateItineraryTxt(itineraryData)}
 
 HANDLING UPDATES:
 When users want to add, change, or remove ANYTHING:
@@ -316,15 +494,7 @@ GENERAL GUIDELINES:
 
 // Itinerary API endpoints
 app.get('/api/itinerary', requireAuth, (req, res) => {
-  try {
-    res.json({
-      txt: itineraryTxt,
-      json: itineraryJson
-    });
-  } catch (err) {
-    console.error('Error reading itinerary:', err);
-    res.status(500).json({ error: 'Failed to read itinerary' });
-  }
+  res.json(itineraryData);
 });
 
 app.put('/api/itinerary', requireAuth, async (req, res) => {
@@ -334,22 +504,30 @@ app.put('/api/itinerary', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Content must be a string' });
     }
 
-    // Save raw txt
-    await writeItinerary(content);
-    itineraryTxt = content;
-
-    // Parse and enrich
+    // Parse txt to structure
     const parsed = parseItinerary(content);
-    itineraryJson = await enrichItinerary(parsed, genAI);
-    writeItineraryJson(itineraryJson);
 
-    res.json({
-      success: true,
-      json: itineraryJson
-    });
+    // Merge with existing enrichments
+    const newData = mergeWithExistingEnrichments(parsed, itineraryData);
+
+    // Save immediately
+    itineraryData = newData;
+    await writeItineraryJson(itineraryData);
+
+    // Also save txt for editor
+    await writeItinerary(content);
+
+    // Return to user immediately
+    res.json({ success: true, data: itineraryData });
+
+    // Background enrich (non-blocking)
+    runBackgroundEnrichment().catch(err =>
+      console.error('Background enrichment error:', err)
+    );
+
   } catch (err) {
-    console.error('Error saving itinerary:', err);
-    res.status(500).json({ error: 'Failed to save itinerary' });
+    console.error('Save error:', err);
+    res.status(500).json({ error: 'Failed to save' });
   }
 });
 
@@ -362,36 +540,38 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Missing day, index, or item' });
     }
 
-    if (!itineraryJson.days[day] || !itineraryJson.days[day].items[index]) {
+    if (!itineraryData.days[day] || !itineraryData.days[day].items[index]) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // Update the item (keep place data if description unchanged)
-    const existingItem = itineraryJson.days[day].items[index];
+    // Update the item (keep enrichment if description unchanged)
+    const existingItem = itineraryData.days[day].items[index];
     const descriptionChanged = existingItem.description !== item.description;
 
-    itineraryJson.days[day].items[index] = {
+    itineraryData.days[day].items[index] = {
       ...existingItem,
       time: item.time,
       description: item.description,
       fallback: item.fallback,
       optional: item.optional,
       type: existingItem.type,
-      place: descriptionChanged ? null : existingItem.place
+      enrichment: descriptionChanged ? null : existingItem.enrichment
     };
 
-    // Regenerate txt
-    itineraryTxt = regenerateItineraryTxt(itineraryJson);
-    await writeItinerary(itineraryTxt);
+    // Regenerate txt and save
+    const txt = regenerateItineraryTxt(itineraryData);
+    await writeItinerary(txt);
+    await writeItineraryJson(itineraryData);
 
-    // Re-enrich if description changed (incremental - only the changed item)
+    // Return immediately
+    res.json({ success: true, data: itineraryData });
+
+    // Background enrich if description changed
     if (descriptionChanged) {
-      const parsed = parseItinerary(itineraryTxt);
-      itineraryJson = await enrichItinerary(parsed, genAI, itineraryJson);
+      runBackgroundEnrichment().catch(err =>
+        console.error('Background enrichment error:', err)
+      );
     }
-    writeItineraryJson(itineraryJson);
-
-    res.json({ success: true, json: itineraryJson });
   } catch (err) {
     console.error('Update item error:', err);
     res.status(500).json({ error: 'Failed to update item' });
@@ -407,27 +587,27 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Missing day or item' });
     }
 
-    if (!itineraryJson.days[day]) {
+    if (!itineraryData.days[day]) {
       return res.status(404).json({ error: 'Day not found' });
     }
 
-    // Create new item
+    // Create new item (with null enrichment for background processing)
     const newItem = {
       time: item.time || 'morning',
       description: item.description,
       type: 'activity',
       fallback: item.fallback || false,
       optional: item.optional || false,
-      place: null
+      enrichment: null
     };
 
     // Find insert position based on time
     const timeOrder = ['morning', 'afternoon', 'evening', 'night'];
     const targetOrder = timeOrder.indexOf(newItem.time);
 
-    let insertIndex = itineraryJson.days[day].items.length;
-    for (let i = 0; i < itineraryJson.days[day].items.length; i++) {
-      const existingTime = itineraryJson.days[day].items[i].time?.toLowerCase();
+    let insertIndex = itineraryData.days[day].items.length;
+    for (let i = 0; i < itineraryData.days[day].items.length; i++) {
+      const existingTime = itineraryData.days[day].items[i].time?.toLowerCase();
       const existingOrder = timeOrder.indexOf(existingTime);
       if (existingOrder > targetOrder || (existingOrder === -1 && targetOrder >= 0)) {
         insertIndex = i;
@@ -435,18 +615,20 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
       }
     }
 
-    itineraryJson.days[day].items.splice(insertIndex, 0, newItem);
+    itineraryData.days[day].items.splice(insertIndex, 0, newItem);
 
-    // Regenerate txt
-    itineraryTxt = regenerateItineraryTxt(itineraryJson);
-    await writeItinerary(itineraryTxt);
+    // Regenerate txt and save
+    const txt = regenerateItineraryTxt(itineraryData);
+    await writeItinerary(txt);
+    await writeItineraryJson(itineraryData);
 
-    // Enrich the new item (incremental - only the new item)
-    const parsed = parseItinerary(itineraryTxt);
-    itineraryJson = await enrichItinerary(parsed, genAI, itineraryJson);
-    writeItineraryJson(itineraryJson);
+    // Return immediately
+    res.json({ success: true, data: itineraryData });
 
-    res.json({ success: true, json: itineraryJson });
+    // Background enrich the new item
+    runBackgroundEnrichment().catch(err =>
+      console.error('Background enrichment error:', err)
+    );
   } catch (err) {
     console.error('Add item error:', err);
     res.status(500).json({ error: 'Failed to add item' });
@@ -462,19 +644,19 @@ app.delete('/api/itinerary/item', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Missing day or index' });
     }
 
-    if (!itineraryJson.days[day] || !itineraryJson.days[day].items[index]) {
+    if (!itineraryData.days[day] || !itineraryData.days[day].items[index]) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
     // Remove the item
-    itineraryJson.days[day].items.splice(index, 1);
+    itineraryData.days[day].items.splice(index, 1);
 
-    // Regenerate txt
-    itineraryTxt = regenerateItineraryTxt(itineraryJson);
-    await writeItinerary(itineraryTxt);
-    writeItineraryJson(itineraryJson);
+    // Regenerate txt and save
+    const txt = regenerateItineraryTxt(itineraryData);
+    await writeItinerary(txt);
+    await writeItineraryJson(itineraryData);
 
-    res.json({ success: true, json: itineraryJson });
+    res.json({ success: true, data: itineraryData });
   } catch (err) {
     console.error('Delete item error:', err);
     res.status(500).json({ error: 'Failed to delete item' });
@@ -500,7 +682,7 @@ app.post('/api/chat', requireAuth, async (req, res) => {
 
       const result = await oscarAgent.chat(message, {
         chatHistory: req.session.chatHistory,
-        itineraryJson
+        itineraryData
       });
 
       // Add to history
@@ -518,21 +700,8 @@ app.post('/api/chat', requireAuth, async (req, res) => {
         engine: 'gemini-2.5-flash'
       });
     } else {
-      // Fallback to Claude (legacy)
+      // Fallback to Claude (legacy, no Gemini research available)
       console.log('Oscar agent not available, falling back to Claude');
-
-      // Check if message needs place research
-      let researchContext = '';
-      let researchWasGrounded = false;
-      if (genAI && needsPlaceResearch(message)) {
-        const research = await researchPlaces(message, genAI, {
-          currentItinerary: itineraryTxt
-        });
-        if (research.success) {
-          researchContext = formatResearchForChat(research);
-          researchWasGrounded = research.grounded;
-        }
-      }
 
       req.session.chatHistory.push({ role: 'user', content: message });
 
@@ -540,20 +709,11 @@ app.post('/api/chat', requireAuth, async (req, res) => {
         req.session.chatHistory = req.session.chatHistory.slice(-20);
       }
 
-      let messagesForClaude = [...req.session.chatHistory];
-      if (researchContext) {
-        const lastUserIdx = messagesForClaude.length - 1;
-        messagesForClaude[lastUserIdx] = {
-          role: 'user',
-          content: `[RESEARCH]\n${researchContext}\n\n[QUESTION]\n${message}`
-        };
-      }
-
       const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 700,
         system: getSystemPrompt(),
-        messages: messagesForClaude
+        messages: req.session.chatHistory
       });
 
       const assistantMessage = response.content[0].text;
@@ -561,8 +721,6 @@ app.post('/api/chat', requireAuth, async (req, res) => {
 
       res.json({
         response: assistantMessage,
-        researchPerformed: !!researchContext,
-        researchGrounded: researchWasGrounded,
         engine: 'claude-sonnet'
       });
     }
@@ -590,9 +748,12 @@ app.post('/api/itinerary/chat-update', requireAuth, async (req, res) => {
   try {
     const { action, day, item, newContent } = req.body;
 
+    // Generate txt from current data
+    const currentTxt = regenerateItineraryTxt(itineraryData);
+
     // Use Claude to intelligently update the txt file
     const updatePrompt = `Current itinerary:
-${itineraryTxt}
+${currentTxt}
 
 User wants to: ${action}
 Day: ${day || 'not specified'}
@@ -610,19 +771,24 @@ Make the minimal change needed. Do not add explanations.`;
 
     const newTxt = response.content[0].text.trim();
 
-    // Save and enrich (incremental - only changed items)
-    await writeItinerary(newTxt);
-    itineraryTxt = newTxt;
-
+    // Parse new txt
     const parsed = parseItinerary(newTxt);
-    itineraryJson = await enrichItinerary(parsed, genAI, itineraryJson);
-    writeItineraryJson(itineraryJson);
 
-    res.json({
-      success: true,
-      txt: itineraryTxt,
-      json: itineraryJson
-    });
+    // Merge with existing enrichments
+    itineraryData = mergeWithExistingEnrichments(parsed, itineraryData);
+
+    // Save
+    await writeItinerary(newTxt);
+    await writeItineraryJson(itineraryData);
+
+    // Return to user immediately
+    res.json({ success: true, data: itineraryData });
+
+    // Trigger background enrichment for new items
+    runBackgroundEnrichment().catch(err =>
+      console.error('Background enrichment error:', err)
+    );
+
   } catch (err) {
     console.error('Chat update error:', err);
     res.status(500).json({ error: 'Failed to update itinerary' });

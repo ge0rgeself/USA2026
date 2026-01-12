@@ -421,6 +421,11 @@
             opacity: 0.7;
         }
 
+        .event-hook.loading {
+            color: #888;
+            font-style: italic;
+        }
+
         @media (max-width: 600px) {
             .event-hook {
                 display: none;
@@ -2469,6 +2474,7 @@
             this.expandedEvent = null;
             this.editingEvent = null;
             this.editState = null;
+            this.pollingInterval = null;
             this.initPillHandlers();
         }
 
@@ -2485,9 +2491,15 @@
         async load() {
             try {
                 const response = await fetch('/api/itinerary');
-                const { json } = await response.json();
-                this.data = json;
+                const result = await response.json();
+                // Handle both old format {txt, json} and new format (direct JSON)
+                this.data = result.json || result;
                 this.render();
+
+                // Start polling if there are pending enrichments
+                if (this.checkForPendingEnrichments()) {
+                    this.startPolling();
+                }
             } catch (err) {
                 console.error('Failed to load calendar data:', err);
             }
@@ -2666,7 +2678,10 @@
 
         renderEventRow(item, index) {
             const isExpanded = this.expandedEvent === index;
-            const place = item.place;
+            // Handle both item.enrichment (new format) and item.place (old format)
+            const enrichment = item.enrichment !== undefined ? item.enrichment : item.place;
+            const isLoading = enrichment === null;
+            const place = enrichment || {};
             const name = place?.name || item.description;
             const neighborhood = this.extractNeighborhood(place?.address);
             const typeClass = item.type || 'activity';
@@ -2694,8 +2709,12 @@
                 item.optional ? 'optional' : ''
             ].filter(Boolean).join(' ');
 
-            const hook = place?.hook || '';
-            const needsDetails = place?.needsDetails || false;
+            // Show loading indicator if enrichment pending
+            const hookHtml = isLoading
+                ? '<span class="event-hook loading">Loading...</span>'
+                : place?.hook
+                    ? `<span class="event-hook${place?.needsDetails ? ' needs-details' : ''}">${this.escapeHtml(place.hook)}</span>`
+                    : '';
 
             return `
             <div class="${rowClasses}" data-event="${index}">
@@ -2703,7 +2722,7 @@
                     <span class="event-type-dot ${typeClass}"></span>
                     <span class="event-time">${this.formatTime(item.time) || ''}</span>
                     <span class="event-name">${this.escapeHtml(name)}</span>
-                    ${hook ? `<span class="event-hook${needsDetails ? ' needs-details' : ''}">${this.escapeHtml(hook)}</span>` : ''}
+                    ${hookHtml}
                     ${badgeHtml}
                     ${neighborhood ? `<span class="event-neighborhood">${neighborhood}</span>` : ''}
                     <svg class="event-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3064,6 +3083,11 @@
                 this.editState = null;
                 this.render();
 
+                // Start polling if there are pending enrichments (new item may need enrichment)
+                if (this.checkForPendingEnrichments()) {
+                    this.startPolling();
+                }
+
                 // Add morph animation to the saved card
                 setTimeout(() => {
                     const savedRow = this.container.querySelector(`[data-event="${index}"]`);
@@ -3183,6 +3207,58 @@
                 if (input) input.focus();
             }, 10);
         }
+
+        // Check if any items have pending (null) enrichments
+        checkForPendingEnrichments() {
+            if (!this.data) return false;
+
+            // Check hotel
+            if (this.data.hotel && this.data.hotel.enrichment === null) return true;
+
+            // Check days
+            for (const day of (this.data.days || [])) {
+                for (const item of (day.items || [])) {
+                    // Check both item.enrichment (new format) and item.place (old format)
+                    const enrichment = item.enrichment !== undefined ? item.enrichment : item.place;
+                    if (enrichment === null) return true;
+                }
+            }
+            return false;
+        }
+
+        // Start polling for enrichment updates
+        startPolling() {
+            if (this.pollingInterval) return;
+
+            this.pollingInterval = setInterval(async () => {
+                if (!this.checkForPendingEnrichments()) {
+                    this.stopPolling();
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/itinerary');
+                    const result = await response.json();
+                    // Handle both old format {txt, json} and new format (direct JSON)
+                    const data = result.json || result;
+
+                    if (JSON.stringify(data) !== JSON.stringify(this.data)) {
+                        this.data = data;
+                        this.render();
+                    }
+                } catch (err) {
+                    console.error('Polling error:', err);
+                }
+            }, 3000);
+        }
+
+        // Stop polling for enrichment updates
+        stopPolling() {
+            if (this.pollingInterval) {
+                clearInterval(this.pollingInterval);
+                this.pollingInterval = null;
+            }
+        }
     }
 
     // ========== INIT ==========
@@ -3198,6 +3274,11 @@
         window.addEventListener('itinerary-updated', (e) => {
             window.calendarRenderer.data = e.detail;
             window.calendarRenderer.render();
+
+            // Start polling if there are pending enrichments
+            if (window.calendarRenderer.checkForPendingEnrichments()) {
+                window.calendarRenderer.startPolling();
+            }
         });
     });
     </script>
