@@ -163,7 +163,7 @@ function findItemsNeedingEnrichment(data) {
         items.push({
           // Use prompt (user's original input) for enrichment lookup
           description: item.prompt || item.description,
-          context: `${day.date} ${day.title} (${item.type})`,
+          context: item.type,
           path: ['days', dayIdx, 'items', itemIdx]
         });
       }
