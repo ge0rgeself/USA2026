@@ -2676,7 +2676,7 @@
                 const index = parseInt(row.dataset.event);
 
                 // Save button
-                const saveBtn = row.querySelector('.event-edit-save');
+                const saveBtn = row.querySelector('.btn-save');
                 if (saveBtn) {
                     saveBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -2685,7 +2685,7 @@
                 }
 
                 // Cancel button
-                const cancelBtn = row.querySelector('.event-edit-cancel');
+                const cancelBtn = row.querySelector('.btn-cancel');
                 if (cancelBtn) {
                     cancelBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -2720,20 +2720,23 @@
                 }
 
                 // Keyboard shortcuts on inputs
-                row.querySelectorAll('input').forEach(input => {
+                row.querySelectorAll('input[type="text"]').forEach(input => {
                     input.addEventListener('keydown', (e) => {
                         if (e.key === 'Escape') {
                             e.preventDefault();
                             this.cancelEdit();
+                        } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            this.saveEdit(index);
                         }
                     });
                 });
 
-                // Focus the description input
-                const descInput = row.querySelector('[data-field="description"]');
-                if (descInput) {
-                    descInput.focus();
-                    descInput.select();
+                // Focus the prompt input
+                const promptInput = row.querySelector('[data-field="prompt"]');
+                if (promptInput) {
+                    promptInput.focus();
+                    promptInput.select();
                 }
             });
 
