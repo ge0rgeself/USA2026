@@ -9,7 +9,8 @@ Transform Oscar from a simple Claude chatbot into a Gemini-powered agentic assis
 
 ## Goals
 
-- Replace Claude Sonnet with Gemini 2.5 Flash
+- Replace Claude Sonnet with Gemini 3 Flash (latest model for reasoning/chat)
+- Use Gemini 2.5 Flash for Maps grounding (Gemini 3 doesn't support it yet)
 - Add function calling (tools) so Oscar decides when to search, update, etc.
 - Use Google Maps grounding for accurate place data
 - Add preferences.md for persistent traveler context
@@ -21,7 +22,8 @@ Transform Oscar from a simple Claude chatbot into a Gemini-powered agentic assis
 User Message
      ↓
 ┌─────────────────────────────────────┐
-│  Gemini 2.5 Flash + Function Calling │
+│  Gemini 3 Flash + Function Calling   │
+│  (latest model for reasoning/chat)   │
 │  Tools: searchPlaces, updateItinerary│
 │         getPreferences, getItinerary │
 └─────────────────────────────────────┘
@@ -69,7 +71,7 @@ Search for places using Google Maps grounding.
 }
 ```
 
-**Implementation:** Calls Gemini with `googleMaps` grounding tool, location context set to NYC/specified neighborhood.
+**Implementation:** Calls Gemini 2.5 Flash with `googleMaps` grounding (Gemini 3 doesn't support Maps yet), location context set to NYC.
 
 ### 2. updateItinerary
 
