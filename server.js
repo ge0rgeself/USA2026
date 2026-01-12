@@ -104,6 +104,7 @@ const { parseItinerary } = require('./lib/parser');
 const { readItinerary, writeItinerary, readItineraryJson, writeItineraryJson } = require('./lib/storage');
 const placeService = require('./lib/place-service');
 const { createOscarAgent } = require('./lib/oscar-agent');
+const { interpretPrompt, matchEvent, TRIP_DATES } = require('./lib/interpreter');
 
 // Itinerary data (new unified format)
 let itineraryData = null;
@@ -123,10 +124,10 @@ function convertToNewFormat(parsed) {
       title: day.title,
       items: day.items.map(item => ({
         time: item.time,
+        timeType: item.timeType || 'none',
         description: item.description,
         type: item.type,
-        fallback: item.fallback,
-        optional: item.optional,
+        status: item.status || 'primary',
         enrichment: null
       }))
     })),
@@ -407,21 +408,32 @@ function regenerateItineraryTxt(data) {
     data.days.forEach(day => {
         txt += `# ${day.date} (${day.dayOfWeek})${day.title ? ' - ' + day.title : ''}\n`;
         day.items.forEach(item => {
+            const status = item.status || 'primary';
             let line = '- ';
-            if (item.fallback) {
-                line += 'fallback: ';
-            }
-            if (item.time && !item.fallback) {
-                line += item.time + ': ';
-            }
-            line += item.description;
-            if (item.optional && !item.fallback) {
+
+            if (status === 'backup') {
+                // Backup format: [time] fallback: description
                 if (item.time) {
-                    line = line.replace(item.time + ':', item.time + ' (optional):');
+                    line += `${item.time} fallback: ${item.description}`;
                 } else {
-                    line += ' (optional)';
+                    line += `fallback: ${item.description}`;
+                }
+            } else if (status === 'optional') {
+                // Optional format: time optional: description or optional: description
+                if (item.time) {
+                    line += `${item.time} optional: ${item.description}`;
+                } else {
+                    line += `optional: ${item.description}`;
+                }
+            } else {
+                // Primary format: time: description
+                if (item.time) {
+                    line += `${item.time}: ${item.description}`;
+                } else {
+                    line += item.description;
                 }
             }
+
             txt += line + '\n';
         });
         txt += '\n';
@@ -543,6 +555,42 @@ app.put('/api/itinerary', requireAuth, async (req, res) => {
   }
 });
 
+// POST endpoint to interpret free-form event prompts
+app.post('/api/interpret', requireAuth, async (req, res) => {
+  try {
+    const { prompt, referenceDay } = req.body;
+
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'prompt is required' });
+    }
+
+    // Load existing events for context
+    const existingEvents = [];
+    if (itineraryData && itineraryData.days) {
+      itineraryData.days.forEach(day => {
+        day.items?.forEach(item => {
+          existingEvents.push({
+            day: day.date,
+            time: item.time,
+            description: item.description,
+            status: item.status || 'primary'
+          });
+        });
+      });
+    }
+
+    const result = await interpretPrompt(prompt, {
+      referenceDate: referenceDay || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      existingEvents
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Interpret error:', error);
+    res.status(500).json({ error: 'Failed to interpret prompt' });
+  }
+});
+
 // PATCH endpoint for updating items
 app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
   try {
@@ -563,9 +611,9 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
     itineraryData.days[day].items[index] = {
       ...existingItem,
       time: item.time,
+      timeType: item.timeType || 'none',
       description: item.description,
-      fallback: item.fallback,
-      optional: item.optional,
+      status: item.status || 'primary',
       type: existingItem.type,
       enrichment: descriptionChanged ? null : existingItem.enrichment
     };
