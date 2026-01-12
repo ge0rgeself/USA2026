@@ -371,7 +371,7 @@ Make the minimal change needed. Do not add explanations.`;
       console.error('Background enrichment error:', err)
     );
 
-    return { success: true, data: itineraryData };
+    return { success: true, json: itineraryData };
   }
 };
 
@@ -530,7 +530,7 @@ app.put('/api/itinerary', requireAuth, async (req, res) => {
     await writeItinerary(content);
 
     // Return to user immediately
-    res.json({ success: true, data: itineraryData });
+    res.json({ success: true, json: itineraryData });
 
     // Background enrich (non-blocking)
     runBackgroundEnrichment().catch(err =>
@@ -576,7 +576,7 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
     await writeItineraryJson(itineraryData);
 
     // Return immediately
-    res.json({ success: true, data: itineraryData });
+    res.json({ success: true, json: itineraryData });
 
     // Background enrich if description changed
     if (descriptionChanged) {
@@ -635,7 +635,7 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
     await writeItineraryJson(itineraryData);
 
     // Return immediately
-    res.json({ success: true, data: itineraryData });
+    res.json({ success: true, json: itineraryData });
 
     // Background enrich the new item
     runBackgroundEnrichment().catch(err =>
@@ -668,7 +668,7 @@ app.delete('/api/itinerary/item', requireAuth, async (req, res) => {
     await writeItinerary(txt);
     await writeItineraryJson(itineraryData);
 
-    res.json({ success: true, data: itineraryData });
+    res.json({ success: true, json: itineraryData });
   } catch (err) {
     console.error('Delete item error:', err);
     res.status(500).json({ error: 'Failed to delete item' });
@@ -794,7 +794,7 @@ Make the minimal change needed. Do not add explanations.`;
     await writeItineraryJson(itineraryData);
 
     // Return to user immediately
-    res.json({ success: true, data: itineraryData });
+    res.json({ success: true, json: itineraryData });
 
     // Trigger background enrichment for new items
     runBackgroundEnrichment().catch(err =>
