@@ -93,10 +93,16 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const client = new Anthropic();
 
-// Gemini client for Maps grounding enrichment
+// Gemini client for Maps grounding enrichment (old SDK for enricher)
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genAI = process.env.GOOGLE_GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
+  : null;
+
+// New Gemini SDK for Oscar agent
+const { GoogleGenAI } = require('@google/genai');
+const genAINew = process.env.GOOGLE_GEMINI_API_KEY
+  ? new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY })
   : null;
 
 // Import parser, enricher, storage, and research
@@ -104,6 +110,7 @@ const { parseItinerary } = require('./lib/parser');
 const { enrichItinerary } = require('./lib/enricher');
 const { readItinerary, writeItinerary, writeItineraryJson } = require('./lib/storage');
 const { needsPlaceResearch, researchPlaces, formatResearchForChat } = require('./lib/gemini-research');
+const { createOscarAgent } = require('./lib/oscar-agent');
 
 // Load itinerary files
 let itineraryTxt = '';
@@ -130,6 +137,59 @@ async function loadItinerary() {
 
 // Load on startup
 loadItinerary();
+
+// Itinerary manager for Oscar agent
+const itineraryManager = {
+  async update({ action, day, time, description, replaceItem }) {
+    // Map day names to date strings
+    const dayMap = {
+      'jan 14': 'Jan 14', 'tuesday': 'Jan 14',
+      'jan 15': 'Jan 15', 'wednesday': 'Jan 15',
+      'jan 16': 'Jan 16', 'thursday': 'Jan 16',
+      'jan 17': 'Jan 17', 'friday': 'Jan 17',
+      'jan 18': 'Jan 18', 'saturday': 'Jan 18'
+    };
+
+    const normalizedDay = dayMap[day.toLowerCase()] || day;
+
+    // Use Claude to intelligently update the txt file
+    const updatePrompt = `Current itinerary:
+${itineraryTxt}
+
+Action: ${action}
+Day: ${normalizedDay}
+Time: ${time || 'not specified'}
+Description: ${description || 'not specified'}
+Item to replace/remove: ${replaceItem || 'not specified'}
+
+Return ONLY the updated itinerary.txt content. Keep the exact same format.
+Make the minimal change needed. Do not add explanations.`;
+
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: updatePrompt }]
+    });
+
+    const newTxt = response.content[0].text.trim();
+
+    // Save and enrich
+    await writeItinerary(newTxt);
+    itineraryTxt = newTxt;
+
+    const parsed = parseItinerary(newTxt);
+    itineraryJson = await enrichItinerary(parsed, genAI, itineraryJson);
+    writeItineraryJson(itineraryJson);
+
+    return { success: true, txt: itineraryTxt, json: itineraryJson };
+  }
+};
+
+// Create Oscar agent (Gemini-powered)
+const oscarAgent = genAINew ? createOscarAgent({
+  genAI: genAINew,
+  itineraryManager
+}) : null;
 
 function regenerateItineraryTxt(data) {
     let txt = '';
@@ -434,73 +494,86 @@ app.post('/api/chat', requireAuth, async (req, res) => {
       req.session.chatHistory = [];
     }
 
-    // Check if message needs place research (uses Gemini with Google Search grounding)
-    let researchContext = '';
-    let researchWasGrounded = false;
-    if (genAI && needsPlaceResearch(message)) {
-      console.log('Performing grounded research for:', message.substring(0, 50) + '...');
-      const research = await researchPlaces(message, genAI, {
-        currentItinerary: itineraryTxt
+    // Use Oscar agent if available, otherwise fall back to Claude
+    if (oscarAgent) {
+      console.log('Using Oscar agent (Gemini 3 Flash)');
+
+      const result = await oscarAgent.chat(message, {
+        chatHistory: req.session.chatHistory,
+        itineraryJson
       });
-      if (research.success) {
-        researchContext = formatResearchForChat(research);
-        researchWasGrounded = research.grounded;
-        console.log('Research completed:', {
-          places: research.places?.length || 0,
-          grounded: research.grounded,
-          queries: research.searchQueries?.slice(0, 3)
-        });
+
+      // Add to history
+      req.session.chatHistory.push({ role: 'user', content: message });
+      req.session.chatHistory.push({ role: 'assistant', content: result.response });
+
+      // Limit history to last 20 messages
+      if (req.session.chatHistory.length > 20) {
+        req.session.chatHistory = req.session.chatHistory.slice(-20);
       }
+
+      res.json({
+        response: result.response,
+        toolsUsed: result.toolsUsed,
+        engine: 'gemini-3-flash'
+      });
+    } else {
+      // Fallback to Claude (legacy)
+      console.log('Oscar agent not available, falling back to Claude');
+
+      // Check if message needs place research
+      let researchContext = '';
+      let researchWasGrounded = false;
+      if (genAI && needsPlaceResearch(message)) {
+        const research = await researchPlaces(message, genAI, {
+          currentItinerary: itineraryTxt
+        });
+        if (research.success) {
+          researchContext = formatResearchForChat(research);
+          researchWasGrounded = research.grounded;
+        }
+      }
+
+      req.session.chatHistory.push({ role: 'user', content: message });
+
+      if (req.session.chatHistory.length > 20) {
+        req.session.chatHistory = req.session.chatHistory.slice(-20);
+      }
+
+      let messagesForClaude = [...req.session.chatHistory];
+      if (researchContext) {
+        const lastUserIdx = messagesForClaude.length - 1;
+        messagesForClaude[lastUserIdx] = {
+          role: 'user',
+          content: `[RESEARCH]\n${researchContext}\n\n[QUESTION]\n${message}`
+        };
+      }
+
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 700,
+        system: getSystemPrompt(),
+        messages: messagesForClaude
+      });
+
+      const assistantMessage = response.content[0].text;
+      req.session.chatHistory.push({ role: 'assistant', content: assistantMessage });
+
+      res.json({
+        response: assistantMessage,
+        researchPerformed: !!researchContext,
+        researchGrounded: researchWasGrounded,
+        engine: 'claude-sonnet'
+      });
     }
-
-    // Add user message to history
-    req.session.chatHistory.push({ role: 'user', content: message });
-
-    // Limit history to last 20 messages to avoid token limits
-    if (req.session.chatHistory.length > 20) {
-      req.session.chatHistory = req.session.chatHistory.slice(-20);
-    }
-
-    // Build messages with research context if available
-    let messagesForClaude = [...req.session.chatHistory];
-    if (researchContext) {
-      // Inject research as context before the user's message
-      const lastUserIdx = messagesForClaude.length - 1;
-      const groundingNote = researchWasGrounded
-        ? '[GROUNDED RESEARCH - This data was verified via Google Search. Use it to inform your response.]'
-        : '[RESEARCH CONTEXT - This information may not be fully verified. Use with appropriate caveats.]';
-      messagesForClaude[lastUserIdx] = {
-        role: 'user',
-        content: `${groundingNote}\n\n${researchContext}\n\n[USER'S QUESTION]\n${message}`
-      };
-    }
-
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 700,
-      system: getSystemPrompt(),
-      messages: messagesForClaude
-    });
-
-    const assistantMessage = response.content[0].text;
-
-    // Add assistant response to history (without the research context injection)
-    req.session.chatHistory.push({ role: 'assistant', content: assistantMessage });
-
-    res.json({
-      response: assistantMessage,
-      researchPerformed: !!researchContext,
-      researchGrounded: researchWasGrounded  // Only true if Google Search grounding was verified
-    });
   } catch (err) {
     console.error('Chat error:', err);
 
-    // Return user-friendly error messages
     let userMessage = 'Sorry, something went wrong. Please try again.';
     if (err.message?.includes('credit balance')) {
-      userMessage = 'API credits exhausted. Please add credits at console.anthropic.com/settings/plans';
+      userMessage = 'API credits exhausted. Please check your API billing.';
     } else if (err.message?.includes('authentication') || err.message?.includes('apiKey')) {
-      userMessage = 'API key issue. Please check your .env file.';
+      userMessage = 'API key issue. Please check your environment variables.';
     }
 
     res.status(500).json({ error: userMessage });
