@@ -20,9 +20,11 @@ NYC trip planner for January 14-18, 2025. Features:
 |------|---------|
 | `index.html` | Main SPA (Calendar, Editor, Chat views) |
 | `login.html` | Google Sign-In page |
-| `server.js` | Express server with OAuth, Claude chat API, itinerary endpoints |
+| `server.js` | Express server with OAuth, chat API, itinerary endpoints |
+| `lib/oscar-agent.js` | Oscar chatbot - Gemini with agentic function calling |
 | `lib/parser.js` | Parses itinerary.txt into structured JSON |
 | `lib/enricher.js` | Enriches places with Gemini Maps grounding |
+| `preferences.md` | Traveler preferences (dietary, budget, pace, etc.) |
 | `itinerary.txt` | Source of truth for trip itinerary (editable) |
 | `itinerary.json` | Parsed + enriched itinerary (auto-generated) |
 | `Dockerfile` | Container config for Cloud Run |
@@ -88,7 +90,7 @@ gcloud run deploy nyc-trip --source . --region us-central1
 ### App Sections
 - **Calendar** - Timeline view of trip itinerary by day
 - **Editor** - Markdown editor for itinerary notes
-- **Chat** - Claude-powered Q&A about the trip
+- **Chat** - Gemini-powered agentic assistant (Oscar)
 
 ### Authentication Flow
 1. Unauthenticated users → redirect to `/login`
@@ -118,15 +120,34 @@ gcloud run deploy nyc-trip --source . --region us-central1
 
 ## Oscar (Chat Assistant)
 
-Oscar is an English bulldog puppy persona for the trip chatbot.
+Oscar is an English bulldog puppy persona powered by Gemini 2.5 Flash with agentic function calling.
+
+**Engine:** Gemini 2.5 Flash with function calling + Google Maps grounding
+
+**Tools Oscar can use:**
+| Tool | Purpose |
+|------|---------|
+| `searchPlaces` | Search restaurants, bars, attractions via Google Maps |
+| `updateItinerary` | Add, modify, or remove items from the trip |
+| `getPreferences` | Read traveler preferences from `preferences.md` |
+| `getItinerary` | Query current schedule for any day |
+
+**How it works:**
+1. User sends a message
+2. Oscar (Gemini) decides which tools to call
+3. Tools execute and return results
+4. Oscar generates a natural response using the data
 
 **Features:**
-- Conversation memory (persists in session, up to 20 messages)
-- Can update itinerary via chat (uses `[UPDATE_AVAILABLE]` marker)
-- Knows correct itinerary format for updates
+- Agentic: Oscar autonomously decides when to search, check preferences, or update itinerary
+- Google Maps grounding: Real-time place data (addresses, hours, ratings)
+- Conversation memory: Up to 20 messages per session
+- Personalized: Reads `preferences.md` for dietary restrictions, budget, pace
 - Friendly bulldog personality with occasional puns
 
-**System prompt location:** `server.js:132-186` (`getSystemPrompt()`)
+**Key files:**
+- `lib/oscar-agent.js` - Tool definitions and agentic loop
+- `preferences.md` - Traveler preferences (edit to customize)
 
 **Clear chat:** Users can reset conversation via Clear button or `POST /api/chat/clear`
 
@@ -156,7 +177,7 @@ Enhances parsed data with real place info via Gemini:
 | Service | Resource |
 |---------|----------|
 | Cloud Run | `nyc-trip` (us-central1) |
-| Secret Manager | `anthropic-api-key`, `google-client-id`, `google-client-secret` |
+| Secret Manager | `anthropic-api-key`, `google-client-id`, `google-client-secret`, `google-gemini-api-key` |
 | IAM | `github-deploy` service account (for CI/CD) |
 
 ## CI/CD
