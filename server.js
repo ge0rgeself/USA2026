@@ -115,6 +115,7 @@ let itineraryData = null;
 function convertToNewFormat(parsed) {
   return {
     hotel: parsed.hotel ? {
+      prompt: parsed.hotel, // Original user input
       description: parsed.hotel,
       enrichment: null
     } : null,
@@ -123,6 +124,7 @@ function convertToNewFormat(parsed) {
       dayOfWeek: day.dayOfWeek,
       title: day.title,
       items: day.items.map(item => ({
+        prompt: item.description, // For txt-parsed items, description IS the prompt
         time: item.time,
         timeType: item.timeType || 'none',
         description: item.description,
@@ -132,6 +134,7 @@ function convertToNewFormat(parsed) {
       }))
     })),
     reservations: parsed.reservations.map(res => ({
+      prompt: res, // Original user input
       description: res,
       enrichment: null
     })),
@@ -147,7 +150,8 @@ function findItemsNeedingEnrichment(data) {
 
   if (data.hotel && !data.hotel.enrichment) {
     items.push({
-      description: data.hotel.description,
+      // Use prompt (user's original input) for enrichment lookup
+      description: data.hotel.prompt || data.hotel.description,
       context: 'hotel',
       path: ['hotel']
     });
@@ -157,7 +161,8 @@ function findItemsNeedingEnrichment(data) {
     day.items.forEach((item, itemIdx) => {
       if (!item.enrichment) {
         items.push({
-          description: item.description,
+          // Use prompt (user's original input) for enrichment lookup
+          description: item.prompt || item.description,
           context: `${day.date} ${day.title} (${item.type})`,
           path: ['days', dayIdx, 'items', itemIdx]
         });
@@ -168,7 +173,8 @@ function findItemsNeedingEnrichment(data) {
   data.reservations.forEach((res, idx) => {
     if (!res.enrichment) {
       items.push({
-        description: res.description,
+        // Use prompt (user's original input) for enrichment lookup
+        description: res.prompt || res.description,
         context: 'reservation',
         path: ['reservations', idx]
       });
@@ -646,18 +652,23 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // Update the item (keep enrichment if description unchanged)
+    // Update the item (keep enrichment if prompt unchanged)
     const existingItem = itineraryData.days[day].items[index];
-    const descriptionChanged = existingItem.description !== item.description;
+
+    // Determine what prompt was provided (new prompt field or legacy description)
+    const newPrompt = item.prompt || item.description;
+    const existingPrompt = existingItem.prompt || existingItem.description;
+    const promptChanged = existingPrompt !== newPrompt;
 
     itineraryData.days[day].items[index] = {
       ...existingItem,
+      prompt: newPrompt,
       time: item.time,
       timeType: item.timeType || 'none',
-      description: item.description,
+      description: item.description || newPrompt, // Use interpreter's description or fall back to prompt
       status: item.status || 'primary',
       type: existingItem.type,
-      enrichment: descriptionChanged ? null : existingItem.enrichment
+      enrichment: promptChanged ? null : existingItem.enrichment
     };
 
     // Regenerate txt and save
@@ -668,8 +679,8 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
     // Return immediately
     res.json({ success: true, json: itineraryData });
 
-    // Background enrich if description changed
-    if (descriptionChanged) {
+    // Background enrich if prompt changed
+    if (promptChanged) {
       runBackgroundEnrichment().catch(err =>
         console.error('Background enrichment error:', err)
       );
@@ -685,8 +696,10 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
   try {
     const { day, item } = req.body;
 
-    if (typeof day !== 'number' || !item || !item.description) {
-      return res.status(400).json({ error: 'Missing day or item' });
+    // Accept either prompt (new) or description (legacy) for the user's input
+    const userPrompt = item?.prompt || item?.description;
+    if (typeof day !== 'number' || !item || !userPrompt) {
+      return res.status(400).json({ error: 'Missing day or item prompt' });
     }
 
     if (!itineraryData.days[day]) {
@@ -694,10 +707,13 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
     }
 
     // Create new item (with null enrichment for background processing)
+    // prompt: the original user input (what they typed)
+    // description: used for display until enrichment provides 'name'
     const newItem = {
+      prompt: userPrompt,
       time: item.time || null,
       timeType: item.timeType || 'none',
-      description: item.description,
+      description: item.description || userPrompt, // Use interpreter's description or fall back to prompt
       type: 'activity',
       status: item.status || 'primary',
       enrichment: null
