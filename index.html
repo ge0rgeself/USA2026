@@ -351,19 +351,13 @@
             min-height: var(--event-row-height);
         }
 
-        .event-type-dot {
-            width: var(--type-dot-size);
-            height: var(--type-dot-size);
+        .event-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
+            background: var(--text-secondary);
             flex-shrink: 0;
         }
-
-        .event-type-dot.food { background: var(--coral); }
-        .event-type-dot.culture { background: var(--teal); }
-        .event-type-dot.entertainment { background: var(--violet); }
-        .event-type-dot.activity { background: var(--sage); }
-        .event-type-dot.transit { background: var(--timeline-line); }
-        .event-type-dot.hotel { background: var(--accent); }
 
         .event-time {
             font-family: 'JetBrains Mono', monospace;
@@ -421,11 +415,6 @@
             color: #3730a3;
         }
 
-        .event-neighborhood {
-            font-size: 12px;
-            color: var(--text-secondary);
-            flex-shrink: 0;
-        }
 
         .event-chevron {
             width: 16px;
@@ -2846,8 +2835,6 @@
             const place = enrichment || {};
             // Display priority: enrichment.name (if enriched) -> item.prompt (user input) -> item.description (legacy) -> 'Untitled'
             const name = item.enrichment?.name || item.prompt || item.description || 'Untitled';
-            const neighborhood = this.extractNeighborhood(place?.address);
-            const typeClass = item.type || 'activity';
 
             // Handle both new status field and old fallback/optional booleans
             const status = item.status || (item.fallback ? 'backup' : item.optional ? 'optional' : 'primary');
@@ -2888,12 +2875,11 @@
             return `
             <div class="${rowClasses}" data-event="${index}">
                 <div class="event-row-collapsed">
-                    <span class="event-type-dot ${typeClass}"></span>
+                    <span class="event-dot"></span>
                     <span class="event-time">${this.formatTime(item.time) || ''}</span>
                     <span class="event-name">${this.escapeHtml(name)}</span>
                     ${loadingHtml}
                     ${badgeHtml}
-                    ${neighborhood ? `<span class="event-neighborhood">${neighborhood}</span>` : ''}
                     <svg class="event-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="6 9 12 15 18 9"/>
                     </svg>
