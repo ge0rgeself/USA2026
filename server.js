@@ -434,17 +434,22 @@ app.post('/api/chat', requireAuth, async (req, res) => {
       req.session.chatHistory = [];
     }
 
-    // Check if message needs place research (uses Gemini with Maps grounding)
+    // Check if message needs place research (uses Gemini with Google Search grounding)
     let researchContext = '';
+    let researchWasGrounded = false;
     if (genAI && needsPlaceResearch(message)) {
       console.log('Performing grounded research for:', message.substring(0, 50) + '...');
       const research = await researchPlaces(message, genAI, {
-        currentItinerary: itineraryTxt,
-        location: { lat: 40.7128, lng: -74.0060 } // NYC coordinates
+        currentItinerary: itineraryTxt
       });
       if (research.success) {
         researchContext = formatResearchForChat(research);
-        console.log('Research completed, found', research.places?.length || 0, 'places');
+        researchWasGrounded = research.grounded;
+        console.log('Research completed:', {
+          places: research.places?.length || 0,
+          grounded: research.grounded,
+          queries: research.searchQueries?.slice(0, 3)
+        });
       }
     }
 
@@ -459,11 +464,14 @@ app.post('/api/chat', requireAuth, async (req, res) => {
     // Build messages with research context if available
     let messagesForClaude = [...req.session.chatHistory];
     if (researchContext) {
-      // Inject research as a system-style context before the user's message
+      // Inject research as context before the user's message
       const lastUserIdx = messagesForClaude.length - 1;
+      const groundingNote = researchWasGrounded
+        ? '[GROUNDED RESEARCH - This data was verified via Google Search. Use it to inform your response.]'
+        : '[RESEARCH CONTEXT - This information may not be fully verified. Use with appropriate caveats.]';
       messagesForClaude[lastUserIdx] = {
         role: 'user',
-        content: `[GROUNDED RESEARCH - Use this accurate, real-time data from Google Maps to inform your response]\n\n${researchContext}\n\n[USER'S QUESTION]\n${message}`
+        content: `${groundingNote}\n\n${researchContext}\n\n[USER'S QUESTION]\n${message}`
       };
     }
 
@@ -481,7 +489,8 @@ app.post('/api/chat', requireAuth, async (req, res) => {
 
     res.json({
       response: assistantMessage,
-      researchPerformed: !!researchContext
+      researchPerformed: !!researchContext,
+      researchGrounded: researchWasGrounded  // Only true if Google Search grounding was verified
     });
   } catch (err) {
     console.error('Chat error:', err);

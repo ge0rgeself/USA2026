@@ -1106,6 +1106,12 @@
             border: 1px solid rgba(22, 101, 52, 0.15);
         }
 
+        .research-badge.unverified {
+            color: #92400e;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid rgba(146, 64, 14, 0.15);
+        }
+
         /* Message Body */
         .message-body {
             padding: 18px 22px;
@@ -2201,7 +2207,10 @@
                 if (!response.ok) {
                     this.addMessage(data.error || 'Something went wrong.', 'assistant');
                 } else {
-                    this.addMessage(data.response, 'assistant', { researchPerformed: data.researchPerformed });
+                    this.addMessage(data.response, 'assistant', {
+                        researchPerformed: data.researchPerformed,
+                        researchGrounded: data.researchGrounded
+                    });
                 }
             } catch (err) {
                 this.hideTyping();
@@ -2299,10 +2308,13 @@
                 const hasUpdate = content.includes('[UPDATE_AVAILABLE]');
                 const cleanContent = hasUpdate ? content.replace('[UPDATE_AVAILABLE]', '').trim() : content;
 
-                // Research indicator
-                const researchBadge = options.researchPerformed
-                    ? '<span class="research-badge" title="Response backed by real-time Google Maps data">verified</span>'
-                    : '';
+                // Research indicator - only show "verified" when grounding was confirmed
+                let researchBadge = '';
+                if (options.researchGrounded) {
+                    researchBadge = '<span class="research-badge" title="Response backed by verified Google Search data">verified</span>';
+                } else if (options.researchPerformed) {
+                    researchBadge = '<span class="research-badge unverified" title="Research performed but not fully verified">researched</span>';
+                }
 
                 contentDiv.innerHTML = `
                     <div class="oscar-attribution">
