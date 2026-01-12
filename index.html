@@ -2888,7 +2888,8 @@
             const isLoading = enrichment === null;
             const hasError = item.enrichmentError === true;
             const place = enrichment || {};
-            const name = place?.name || item.description;
+            // Display priority: enrichment.name (if enriched) -> item.prompt (user input) -> item.description (legacy) -> 'Untitled'
+            const name = item.enrichment?.name || item.prompt || item.description || 'Untitled';
             const neighborhood = this.extractNeighborhood(place?.address);
             const typeClass = item.type || 'activity';
 
@@ -3017,13 +3018,11 @@
         }
 
         renderEditForm(item, index) {
-            const enrichment = item.enrichment !== undefined ? item.enrichment : item.place;
-            const name = enrichment?.name || item.description || '';
             const status = item.status || (item.fallback ? 'backup' : item.optional ? 'optional' : 'primary');
             const isNew = item.isNew || false;
 
-            // Combine time and description for the prompt input
-            const timeAndDesc = item.time ? `${name} around ${item.time}` : name;
+            // Edit form shows the original prompt (user's input), falling back to description for legacy data
+            const promptValue = item.prompt || item.description || '';
 
             return `
             <div class="event-row editing" data-event="${index}">
@@ -3033,7 +3032,7 @@
                     <input type="text"
                            class="event-edit-input"
                            data-field="prompt"
-                           value="${this.escapeHtml(timeAndDesc)}"
+                           value="${this.escapeHtml(promptValue)}"
                            placeholder="What's the plan?">
                     <div class="event-edit-hint">e.g., "dinner at Carbone around 7pm"</div>
 
@@ -3418,6 +3417,7 @@
                         body: JSON.stringify({
                             day: targetDayIndex,
                             item: {
+                                prompt: prompt,
                                 time: interpreted.time,
                                 timeType: interpreted.timeType,
                                 description: interpreted.description,
@@ -3438,6 +3438,7 @@
                             day: this.selectedDay - 1,
                             index: index,
                             item: {
+                                prompt: prompt,
                                 time: interpreted.time,
                                 timeType: interpreted.timeType,
                                 description: interpreted.description,
