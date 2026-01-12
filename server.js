@@ -104,6 +104,7 @@ const { parseItinerary } = require('./lib/parser');
 const { readItinerary, writeItinerary, readItineraryJson, writeItineraryJson } = require('./lib/storage');
 const placeService = require('./lib/place-service');
 const { createOscarAgent } = require('./lib/oscar-agent');
+const { interpretPrompt, matchEvent, TRIP_DATES } = require('./lib/interpreter');
 
 // Itinerary data (new unified format)
 let itineraryData = null;
@@ -123,10 +124,10 @@ function convertToNewFormat(parsed) {
       title: day.title,
       items: day.items.map(item => ({
         time: item.time,
+        timeType: item.timeType || 'none',
         description: item.description,
         type: item.type,
-        fallback: item.fallback,
-        optional: item.optional,
+        status: item.status || 'primary',
         enrichment: null
       }))
     })),
@@ -278,6 +279,44 @@ function mergeWithExistingEnrichments(parsed, existingData) {
   return newData;
 }
 
+/**
+ * Migrate old fallback/optional boolean flags to status field
+ */
+function migrateToStatusField(itinerary) {
+  if (!itinerary || !itinerary.days) return itinerary;
+
+  let migrationCount = 0;
+
+  itinerary.days.forEach(day => {
+    if (!day.items) return;
+    day.items.forEach(item => {
+      // Skip if already has status field
+      if (item.status) return;
+
+      // Migrate from boolean flags
+      if (item.fallback) {
+        item.status = 'backup';
+        migrationCount++;
+      } else if (item.optional) {
+        item.status = 'optional';
+        migrationCount++;
+      } else {
+        item.status = 'primary';
+      }
+
+      // Clean up old flags
+      delete item.fallback;
+      delete item.optional;
+    });
+  });
+
+  if (migrationCount > 0) {
+    console.log(`Migrated ${migrationCount} items to status field`);
+  }
+
+  return itinerary;
+}
+
 async function loadItinerary() {
   try {
     // Try GCS JSON first with timeout
@@ -290,6 +329,8 @@ async function loadItinerary() {
 
     if (data) {
       itineraryData = data;
+      // Apply migration to ensure consistent format
+      itineraryData = migrateToStatusField(itineraryData);
       console.log('Itinerary loaded from GCS JSON');
       return;
     }
@@ -302,6 +343,8 @@ async function loadItinerary() {
     const txt = await readItinerary();
     const parsed = parseItinerary(txt);
     itineraryData = convertToNewFormat(parsed);
+    // Apply migration to ensure consistent format
+    itineraryData = migrateToStatusField(itineraryData);
     console.log('Itinerary loaded from txt, converted to new format');
     // Save to GCS in new format
     await writeItineraryJson(itineraryData);
@@ -407,21 +450,32 @@ function regenerateItineraryTxt(data) {
     data.days.forEach(day => {
         txt += `# ${day.date} (${day.dayOfWeek})${day.title ? ' - ' + day.title : ''}\n`;
         day.items.forEach(item => {
+            const status = item.status || 'primary';
             let line = '- ';
-            if (item.fallback) {
-                line += 'fallback: ';
-            }
-            if (item.time && !item.fallback) {
-                line += item.time + ': ';
-            }
-            line += item.description;
-            if (item.optional && !item.fallback) {
+
+            if (status === 'backup') {
+                // Backup format: [time] fallback: description
                 if (item.time) {
-                    line = line.replace(item.time + ':', item.time + ' (optional):');
+                    line += `${item.time} fallback: ${item.description}`;
                 } else {
-                    line += ' (optional)';
+                    line += `fallback: ${item.description}`;
+                }
+            } else if (status === 'optional') {
+                // Optional format: time optional: description or optional: description
+                if (item.time) {
+                    line += `${item.time} optional: ${item.description}`;
+                } else {
+                    line += `optional: ${item.description}`;
+                }
+            } else {
+                // Primary format: time: description
+                if (item.time) {
+                    line += `${item.time}: ${item.description}`;
+                } else {
+                    line += item.description;
                 }
             }
+
             txt += line + '\n';
         });
         txt += '\n';
@@ -543,6 +597,42 @@ app.put('/api/itinerary', requireAuth, async (req, res) => {
   }
 });
 
+// POST endpoint to interpret free-form event prompts
+app.post('/api/interpret', requireAuth, async (req, res) => {
+  try {
+    const { prompt, referenceDay } = req.body;
+
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'prompt is required' });
+    }
+
+    // Load existing events for context
+    const existingEvents = [];
+    if (itineraryData && itineraryData.days) {
+      itineraryData.days.forEach(day => {
+        day.items?.forEach(item => {
+          existingEvents.push({
+            day: day.date,
+            time: item.time,
+            description: item.description,
+            status: item.status || 'primary'
+          });
+        });
+      });
+    }
+
+    const result = await interpretPrompt(prompt, {
+      referenceDate: referenceDay || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      existingEvents
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Interpret error:', error);
+    res.status(500).json({ error: 'Failed to interpret prompt' });
+  }
+});
+
 // PATCH endpoint for updating items
 app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
   try {
@@ -563,9 +653,9 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
     itineraryData.days[day].items[index] = {
       ...existingItem,
       time: item.time,
+      timeType: item.timeType || 'none',
       description: item.description,
-      fallback: item.fallback,
-      optional: item.optional,
+      status: item.status || 'primary',
       type: existingItem.type,
       enrichment: descriptionChanged ? null : existingItem.enrichment
     };
@@ -605,11 +695,11 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
 
     // Create new item (with null enrichment for background processing)
     const newItem = {
-      time: item.time || 'morning',
+      time: item.time || null,
+      timeType: item.timeType || 'none',
       description: item.description,
       type: 'activity',
-      fallback: item.fallback || false,
-      optional: item.optional || false,
+      status: item.status || 'primary',
       enrichment: null
     };
 
@@ -672,6 +762,48 @@ app.delete('/api/itinerary/item', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Delete item error:', err);
     res.status(500).json({ error: 'Failed to delete item' });
+  }
+});
+
+// POST endpoint for re-enriching a specific item
+app.post('/api/itinerary/enrich', requireAuth, async (req, res) => {
+  try {
+    const { day, index } = req.body;
+
+    if (typeof day !== 'number' || typeof index !== 'number') {
+      return res.status(400).json({ error: 'Missing day or index' });
+    }
+
+    if (!itineraryData.days[day]) {
+      return res.status(404).json({ error: 'Day not found' });
+    }
+
+    const item = itineraryData.days[day].items[index];
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Return immediately with current data
+    res.json({ success: true, json: itineraryData });
+
+    // Trigger enrichment for this specific item
+    try {
+      const enrichments = await placeService.enrichBatch(genAINew, [item]);
+      if (enrichments && enrichments.length > 0) {
+        item.enrichment = enrichments[0];
+        item.enrichmentError = false;
+        await writeItineraryJson(itineraryData);
+        console.log(`Re-enriched item: ${item.description}`);
+      }
+    } catch (err) {
+      console.error('Failed to re-enrich item:', err.message);
+      item.enrichmentError = true;
+      await writeItineraryJson(itineraryData);
+    }
+
+  } catch (err) {
+    console.error('Enrich endpoint error:', err);
+    res.status(500).json({ error: 'Failed to enrich item' });
   }
 });
 

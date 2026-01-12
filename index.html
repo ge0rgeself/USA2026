@@ -319,28 +319,6 @@
             margin: 0 auto;
         }
 
-        /* Time Divider */
-        .time-divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 0 8px;
-        }
-
-        .time-divider-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .time-divider-line {
-            flex: 1;
-            height: 1px;
-            background: var(--timeline-line);
-        }
-
         /* Event Row */
         .event-row {
             position: relative;
@@ -424,6 +402,40 @@
         .event-hook.loading {
             color: #888;
             font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .event-hook.loading .spinner {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border: 2px solid #ccc;
+            border-top-color: #666;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        .event-hook.error {
+            color: #d97706;
+            font-style: italic;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-color: #d97706;
+            text-decoration-style: dotted;
+        }
+
+        .event-hook.error:hover {
+            color: #dc2626;
+            text-decoration-color: #dc2626;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @media (max-width: 600px) {
@@ -441,6 +453,16 @@
             background: var(--bg-elevated);
             color: var(--text-secondary);
             flex-shrink: 0;
+        }
+
+        .event-badge.backup {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .event-badge.optional {
+            background-color: #e0e7ff;
+            color: #3730a3;
         }
 
         .event-neighborhood {
@@ -1691,6 +1713,11 @@
             border-left: 3px solid var(--teal);
         }
 
+        .event-row.secondary {
+            opacity: 0.75;
+            border-left: 3px dashed var(--accent-dim);
+        }
+
         .event-row.fallback {
             opacity: 0.75;
             border-left: 3px dashed var(--accent-dim);
@@ -1730,6 +1757,40 @@
             background: var(--bg-card);
         }
 
+        /* Add Event Trigger */
+        .event-add-trigger {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.15s, background-color 0.15s;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .event-add-trigger:hover {
+            color: var(--coral);
+            background-color: var(--bg-elevated);
+        }
+
+        .add-icon {
+            font-size: 1.25rem;
+            font-weight: 300;
+        }
+
+        .event-row.adding {
+            background-color: var(--bg-card);
+            border: 2px dashed var(--timeline-line);
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .event-row.adding:focus-within {
+            border-color: var(--coral);
+        }
+
         .event-row.editing {
             border-color: var(--coral);
             border-width: 2px;
@@ -1746,104 +1807,142 @@
 
         .event-edit-form {
             display: none;
-            padding: 16px;
+            padding: 1rem;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
         .event-row.editing .event-edit-form {
-            display: block;
-        }
-
-        .event-edit-fields {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
         }
 
-        .event-edit-row {
+        .event-edit-input {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            font-size: 1rem;
+            border: 1px solid var(--timeline-line);
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .event-edit-input:focus {
+            outline: none;
+            border-color: var(--coral);
+            box-shadow: 0 0 0 2px rgba(201, 70, 61, 0.1);
+        }
+
+        .event-edit-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .event-edit-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .event-edit-status {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .event-edit-field {
-            flex: 1;
-        }
-
-        .event-edit-field label {
-            display: block;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        .event-edit-field input,
-        .event-edit-field select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--timeline-line);
-            border-radius: 8px;
-            background: var(--bg-main);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 15px;
-            outline: none;
-            transition: border-color 0.15s ease;
-        }
-
-        .event-edit-field input:focus,
-        .event-edit-field select:focus {
-            border-color: var(--coral);
-        }
-
-        .event-edit-field input::placeholder {
+        .status-label {
+            font-size: 0.875rem;
             color: var(--text-secondary);
         }
 
-        .event-edit-field.time-field {
-            flex: 0 0 100px;
+        .status-option {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .status-option input[type="radio"] {
+            cursor: pointer;
         }
 
         .event-edit-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 16px;
-            padding-top: 12px;
+            gap: 0.5rem;
+            padding-top: 0.5rem;
             border-top: 1px solid var(--timeline-line);
         }
 
-        .event-edit-save {
-            padding: 10px 20px;
-            background: var(--coral);
-            border: none;
-            border-radius: 8px;
-            color: var(--bg-deep);
-            font-size: 14px;
-            font-weight: 500;
+        .btn-cancel,
+        .btn-save,
+        .btn-delete {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: 4px;
             cursor: pointer;
+            font-family: inherit;
             transition: all 0.15s ease;
         }
 
-        .event-edit-save:hover {
-            background: #b33d35;
-        }
-
-        .event-edit-cancel {
-            padding: 10px 16px;
-            background: transparent;
+        .btn-cancel {
+            background: none;
             border: 1px solid var(--timeline-line);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.15s ease;
+            color: var(--text-primary);
         }
 
-        .event-edit-cancel:hover {
-            border-color: var(--text-secondary);
-            color: var(--text-primary);
+        .btn-cancel:hover {
+            background-color: var(--bg-elevated);
+        }
+
+        .btn-save {
+            background-color: var(--coral);
+            border: none;
+            color: white;
+        }
+
+        .btn-save:hover {
+            opacity: 0.9;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+
+        .btn-delete:hover {
+            color: #dc2626;
+        }
+
+        /* Delete Confirmation */
+        .delete-confirm {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-left: auto;
+            font-size: 0.875rem;
+        }
+
+        .delete-confirm span {
+            color: #dc2626;
+        }
+
+        .btn-confirm-delete {
+            background-color: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn-cancel-delete {
+            background: none;
+            border: 1px solid var(--timeline-line);
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
         }
 
         .event-edit-delete {
@@ -2544,11 +2643,8 @@
             // Render day items
             html += this.renderDayItems(dayData.items);
 
-            // Add ghost card for adding new events
-            html += `
-            <div class="ghost-card" data-action="add">
-                <span>Add something...</span>
-            </div>`;
+            // Add event card
+            html += this.renderAddEventCard();
 
             this.container.innerHTML = html;
 
@@ -2560,6 +2656,12 @@
                     if (e.target.closest('.event-edit-btn')) {
                         e.stopPropagation();
                         this.startEdit(index);
+                        return;
+                    }
+                    // If clicking error message, retry enrichment
+                    if (e.target.closest('.event-hook.error')) {
+                        e.stopPropagation();
+                        this.retryEnrichment(index);
                         return;
                     }
                     // Prevent event from bubbling (fixes mobile double-fire issue)
@@ -2591,12 +2693,29 @@
                     });
                 }
 
-                // Delete button
-                const deleteBtn = row.querySelector('.event-edit-delete');
+                // Delete button (show confirmation)
+                const deleteBtn = row.querySelector('.btn-delete');
                 if (deleteBtn) {
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        this.deleteEvent(index);
+                        this.confirmDelete(index);
+                    });
+                }
+
+                // Delete confirmation buttons
+                const confirmDeleteBtn = row.querySelector('.btn-confirm-delete');
+                if (confirmDeleteBtn) {
+                    confirmDeleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.executeDelete(index);
+                    });
+                }
+
+                const cancelDeleteBtn = row.querySelector('.btn-cancel-delete');
+                if (cancelDeleteBtn) {
+                    cancelDeleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.cancelDelete();
                     });
                 }
 
@@ -2618,9 +2737,50 @@
                 }
             });
 
-            // Ghost card click handler
+            // Ghost card click handler (legacy)
             this.container.querySelectorAll('.ghost-card').forEach(ghost => {
                 ghost.addEventListener('click', () => this.addNewEvent());
+            });
+
+            // Add event trigger click handler
+            this.container.querySelectorAll('.event-add-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => this.startAddEvent());
+            });
+
+            // Add event form handlers
+            this.container.querySelectorAll('.event-row.adding').forEach(() => {
+                // Add cancel button handler
+                const cancelBtn = this.container.querySelector('.event-row.adding .btn-cancel');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.cancelAdd();
+                    });
+                }
+
+                // Add save button handler
+                const saveBtn = this.container.querySelector('.event-row.adding .btn-save');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.saveNewEvent();
+                    });
+                }
+
+                // Focus and keyboard shortcuts on new-prompt input
+                const input = this.container.querySelector('[data-field="new-prompt"]');
+                if (input) {
+                    input.focus();
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            this.saveNewEvent();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            this.cancelAdd();
+                        }
+                    });
+                }
             });
         }
 
@@ -2648,32 +2808,73 @@
 
         renderDayItems(items) {
             let html = '';
-            let lastTimeGroup = null;
-            let eventIndex = 0;
 
-            for (const item of items) {
-                // Time divider
-                const timeGroup = this.getTimeGroup(item.time);
-                if (timeGroup && timeGroup !== lastTimeGroup) {
-                    html += `
-                    <div class="time-divider">
-                        <span class="time-divider-label">${timeGroup}</span>
-                        <div class="time-divider-line"></div>
-                    </div>`;
-                    lastTimeGroup = timeGroup;
-                }
+            // Sort items by time
+            const sorted = [...items].sort((a, b) => this.compareEventTimes(a.time, b.time));
 
-                // Render edit form or event row
-                const isEditing = this.editingEvent === eventIndex;
+            sorted.forEach((item, index) => {
+                // Find original index for edit/expand state
+                const originalIndex = items.findIndex(i => i === item);
+                const isEditing = this.editingEvent === originalIndex;
+
                 if (isEditing) {
-                    html += this.renderEditForm(item, eventIndex);
+                    html += this.renderEditForm(item, originalIndex);
                 } else {
-                    html += this.renderEventRow(item, eventIndex);
+                    html += this.renderEventRow(item, originalIndex);
                 }
-                eventIndex++;
-            }
+            });
 
             return html;
+        }
+
+        compareEventTimes(timeA, timeB) {
+            const order = { 'morning': 1, 'breakfast': 1, 'lunch': 2, 'afternoon': 2, 'evening': 3, 'dinner': 3, 'late night': 4, 'night': 4 };
+
+            const parseTime = (t) => {
+                if (!t) return 999; // No time goes last
+                const tLower = t.toLowerCase();
+                if (order[tLower]) return order[tLower] * 100;
+                // Parse specific time like "7:30pm"
+                const match = tLower.match(/(\d+):?(\d*)\s*(am|pm)?/);
+                if (match) {
+                    let hour = parseInt(match[1]);
+                    const min = parseInt(match[2]) || 0;
+                    const isPM = match[3] === 'pm';
+                    if (isPM && hour !== 12) hour += 12;
+                    if (!isPM && hour === 12) hour = 0;
+                    return hour * 60 + min;
+                }
+                return 500; // Unknown format in middle
+            };
+
+            return parseTime(timeA) - parseTime(timeB);
+        }
+
+        renderAddEventCard() {
+            if (this.isAddingEvent) {
+                return `
+                <div class="event-row adding" data-event="new">
+                    <div class="event-edit-form">
+                        <input type="text"
+                               class="event-edit-input"
+                               data-field="new-prompt"
+                               placeholder="What's the plan?"
+                               autofocus>
+                        <div class="event-edit-hint">e.g., "dinner at Carbone around 7pm"</div>
+
+                        <div class="event-edit-actions">
+                            <button class="btn-cancel" type="button">Cancel</button>
+                            <button class="btn-save" type="button">Add</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            return `
+            <div class="event-add-trigger" data-action="add">
+                <span class="add-icon">+</span>
+                <span>Add event...</span>
+            </div>`;
         }
 
         renderEventRow(item, index) {
@@ -2681,14 +2882,19 @@
             // Handle both item.enrichment (new format) and item.place (old format)
             const enrichment = item.enrichment !== undefined ? item.enrichment : item.place;
             const isLoading = enrichment === null;
+            const hasError = item.enrichmentError === true;
             const place = enrichment || {};
             const name = place?.name || item.description;
             const neighborhood = this.extractNeighborhood(place?.address);
             const typeClass = item.type || 'activity';
 
+            // Handle both new status field and old fallback/optional booleans
+            const status = item.status || (item.fallback ? 'backup' : item.optional ? 'optional' : 'primary');
+            const isSecondary = status !== 'primary';
+
             let badgeHtml = '';
-            if (item.fallback) badgeHtml = '<span class="event-badge">Backup</span>';
-            else if (item.optional) badgeHtml = '<span class="event-badge">Optional</span>';
+            if (status === 'backup') badgeHtml = '<span class="event-badge backup">BACKUP</span>';
+            else if (status === 'optional') badgeHtml = '<span class="event-badge optional">OPTIONAL</span>';
 
             // Determine time specificity class
             let timeClass = 'time-vague';
@@ -2705,16 +2911,20 @@
                 'event-row',
                 timeClass,
                 isExpanded ? 'expanded' : '',
-                item.fallback ? 'fallback' : '',
-                item.optional ? 'optional' : ''
+                isSecondary ? 'secondary' : '',
+                isLoading ? 'enriching' : '',
+                hasError ? 'error' : ''
             ].filter(Boolean).join(' ');
 
-            // Show loading indicator if enrichment pending
-            const hookHtml = isLoading
-                ? '<span class="event-hook loading">Loading...</span>'
-                : place?.hook
-                    ? `<span class="event-hook${place?.needsDetails ? ' needs-details' : ''}">${this.escapeHtml(place.hook)}</span>`
-                    : '';
+            // Show loading indicator, error, or content
+            let hookHtml = '';
+            if (isLoading) {
+                hookHtml = '<span class="event-hook loading"><span class="spinner"></span>Enriching...</span>';
+            } else if (hasError) {
+                hookHtml = '<span class="event-hook error">⚠️ Couldn\'t enrich</span>';
+            } else if (place?.hook) {
+                hookHtml = `<span class="event-hook${place?.needsDetails ? ' needs-details' : ''}">${this.escapeHtml(place.hook)}</span>`;
+            }
 
             return `
             <div class="${rowClasses}" data-event="${index}">
@@ -2803,44 +3013,52 @@
         }
 
         renderEditForm(item, index) {
-            const place = item.place;
-            const name = place?.name || item.description || '';
-            const time = item.time || '';
+            const enrichment = item.enrichment !== undefined ? item.enrichment : item.place;
+            const name = enrichment?.name || item.description || '';
+            const status = item.status || (item.fallback ? 'backup' : item.optional ? 'optional' : 'primary');
             const isNew = item.isNew || false;
+
+            // Combine time and description for the prompt input
+            const timeAndDesc = item.time ? `${name} around ${item.time}` : name;
 
             return `
             <div class="event-row editing" data-event="${index}">
                 <div class="event-row-collapsed" style="display:none"></div>
                 <div class="event-row-expanded" style="display:none"></div>
                 <div class="event-edit-form">
-                    <div class="event-edit-fields">
-                        <div class="event-edit-row">
-                            <div class="event-edit-field time-field">
-                                <label>Time</label>
-                                <input type="text"
-                                       data-field="time"
-                                       value="${this.escapeHtml(time)}"
-                                       placeholder="7pm">
-                            </div>
-                            <div class="event-edit-field">
-                                <label>What</label>
-                                <input type="text"
-                                       data-field="description"
-                                       value="${this.escapeHtml(name)}"
-                                       placeholder="Dinner at Carbone, Greenwich Village">
-                            </div>
-                        </div>
+                    <input type="text"
+                           class="event-edit-input"
+                           data-field="prompt"
+                           value="${this.escapeHtml(timeAndDesc)}"
+                           placeholder="What's the plan?">
+                    <div class="event-edit-hint">e.g., "dinner at Carbone around 7pm"</div>
+
+                    <div class="event-edit-status">
+                        <span class="status-label">Status:</span>
+                        <label class="status-option">
+                            <input type="radio" name="status-${index}" value="primary" ${status === 'primary' ? 'checked' : ''}>
+                            <span>Primary</span>
+                        </label>
+                        <label class="status-option">
+                            <input type="radio" name="status-${index}" value="backup" ${status === 'backup' ? 'checked' : ''}>
+                            <span>Backup</span>
+                        </label>
+                        <label class="status-option">
+                            <input type="radio" name="status-${index}" value="optional" ${status === 'optional' ? 'checked' : ''}>
+                            <span>Optional</span>
+                        </label>
                     </div>
+
                     <div class="event-edit-actions">
-                        <div>
-                            ${!isNew ? `
-                            <button class="event-edit-delete" type="button">Delete</button>
-                            ` : ''}
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="event-edit-cancel" type="button">Cancel</button>
-                            <button class="event-edit-save" type="button">Save</button>
-                        </div>
+                        <button class="btn-cancel" type="button">Cancel</button>
+                        <button class="btn-save" type="button">Save</button>
+                        ${!isNew ? (this.deleteConfirmingIndex === index ? `
+                            <div class="delete-confirm">
+                                <span>Delete this event?</span>
+                                <button class="btn-confirm-delete" type="button">Yes, delete</button>
+                                <button class="btn-cancel-delete" type="button">No, keep</button>
+                            </div>
+                        ` : `<button class="btn-delete" type="button">Delete...</button>`) : ''}
                     </div>
                 </div>
             </div>`;
@@ -3009,6 +3227,100 @@
             this.render();
         }
 
+        startAddEvent() {
+            this.isAddingEvent = true;
+            this.render();
+            // Focus will be set by event handlers in render()
+        }
+
+        cancelAdd() {
+            this.isAddingEvent = false;
+            this.render();
+        }
+
+        async saveNewEvent() {
+            const input = document.querySelector('[data-field="new-prompt"]');
+            const prompt = input?.value?.trim();
+
+            if (!prompt) {
+                showToast('Please enter an event description', 'error');
+                return;
+            }
+
+            // Show loading state
+            input.disabled = true;
+
+            try {
+                // First, interpret the prompt
+                const dayData = this.data.days[this.selectedDay - 1];
+                const interpretResponse = await fetch('/api/interpret', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        referenceDay: this.selectedDay - 1,
+                        existingEvents: dayData.items.map(it => ({
+                            day: it.day || dayData.date,
+                            time: it.time,
+                            description: it.description
+                        }))
+                    })
+                });
+
+                if (!interpretResponse.ok) throw new Error('Failed to interpret prompt');
+
+                const interpreted = await interpretResponse.json();
+
+                if (interpreted.error || interpreted.needsClarification) {
+                    throw new Error(interpreted.error || 'Could not interpret prompt - please be more specific');
+                }
+
+                // Determine target day
+                let targetDayIndex = this.selectedDay - 1;
+                if (interpreted.day) {
+                    const targetDay = this.data.days.find(d => d.date === interpreted.day);
+                    if (targetDay) {
+                        targetDayIndex = this.data.days.indexOf(targetDay);
+                    }
+                }
+
+                // Save the new event
+                const response = await fetch('/api/itinerary/item', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        day: targetDayIndex,
+                        item: {
+                            time: interpreted.time,
+                            timeType: interpreted.timeType,
+                            description: interpreted.description,
+                            status: interpreted.status || 'primary'
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to add event');
+                }
+
+                const result = await response.json();
+                this.data = result.json;
+                this.isAddingEvent = false;
+                showToast('Event added', 'success');
+
+                // Start polling for enrichment if needed
+                if (this.checkForPendingEnrichments()) {
+                    this.startPolling();
+                }
+
+                this.render();
+            } catch (error) {
+                showToast(error.message, 'error');
+                input.disabled = false;
+            }
+        }
+
         showSaveIndicator(text, success = false) {
             let indicator = document.querySelector('.save-indicator');
             if (!indicator) {
@@ -3029,61 +3341,118 @@
             if (this.editingEvent === null) return;
 
             const row = this.container.querySelector(`[data-event="${index}"]`);
-            const timeInput = row?.querySelector('[data-field="time"]');
-            const descInput = row?.querySelector('[data-field="description"]');
+            const promptInput = row?.querySelector('[data-field="prompt"]');
+            const prompt = promptInput?.value?.trim();
 
-            const time = timeInput?.value?.trim() || 'evening';
-            const description = descInput?.value?.trim();
+            // Get selected status
+            const statusRadio = row?.querySelector(`input[name="status-${index}"]:checked`);
+            const manualStatus = statusRadio?.value || 'primary';
+
+            if (!prompt) {
+                showToast('Please enter an event description', 'error');
+                return;
+            }
 
             const dayData = this.data.days[this.selectedDay - 1];
             const item = dayData.items[index];
             const isNew = item?.isNew;
-
-            // If description is empty, cancel or delete
-            if (!description) {
-                if (isNew) {
-                    dayData.items.splice(index, 1);
-                }
-                this.cancelEdit();
-                return;
-            }
-
-            // Build the parsed item
-            const parsed = {
-                time: time,
-                description: description,
-                fallback: item?.fallback || false,
-                optional: item?.optional || false
-            };
 
             // Show processing state
             row.classList.remove('editing');
             row.classList.add('processing');
 
             try {
-                const endpoint = '/api/itinerary/item';
-                const method = isNew ? 'POST' : 'PATCH';
-                const body = isNew
-                    ? { day: this.selectedDay - 1, item: parsed }
-                    : { day: this.selectedDay - 1, index: index, item: parsed };
-
-                const response = await fetch(endpoint, {
-                    method: method,
+                // First, interpret the prompt via the interpreter endpoint
+                const interpretResponse = await fetch('/api/interpret', {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        referenceDay: this.selectedDay - 1,
+                        existingEvents: dayData.items.map(it => ({
+                            day: it.day || dayData.date,
+                            time: it.time,
+                            description: it.description
+                        }))
+                    })
                 });
 
-                if (!response.ok) throw new Error('Save failed');
+                if (!interpretResponse.ok) throw new Error('Failed to interpret prompt');
 
-                const { json } = await response.json();
-                this.data = json;
+                const interpreted = await interpretResponse.json();
 
-                // Brief morph animation
+                if (interpreted.error || interpreted.needsClarification) {
+                    throw new Error(interpreted.error || 'Could not interpret prompt - please be more specific');
+                }
+
+                // Apply manual status override
+                interpreted.status = manualStatus;
+
+                // Check if day changed
+                let targetDayIndex = this.selectedDay - 1;
+                if (interpreted.day) {
+                    // Find the target day index by matching the date
+                    const targetDay = this.data.days.find(d => d.date === interpreted.day);
+                    if (targetDay) {
+                        targetDayIndex = this.data.days.indexOf(targetDay);
+                    }
+                }
+
+                if (targetDayIndex !== this.selectedDay - 1 && interpreted.day) {
+                    // Day changed - delete from current, add to new
+                    // Delete from current day
+                    await fetch('/api/itinerary/item', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ day: this.selectedDay - 1, index: index })
+                    });
+
+                    // Add to new day
+                    const addResponse = await fetch('/api/itinerary/item', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            day: targetDayIndex,
+                            item: {
+                                time: interpreted.time,
+                                timeType: interpreted.timeType,
+                                description: interpreted.description,
+                                status: interpreted.status
+                            }
+                        })
+                    });
+
+                    if (!addResponse.ok) throw new Error('Failed to move event');
+                    const { json } = await addResponse.json();
+                    this.data = json;
+                } else {
+                    // Same day - update in place
+                    const patchResponse = await fetch('/api/itinerary/item', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            day: this.selectedDay - 1,
+                            index: index,
+                            item: {
+                                time: interpreted.time,
+                                timeType: interpreted.timeType,
+                                description: interpreted.description,
+                                status: interpreted.status
+                            }
+                        })
+                    });
+
+                    if (!patchResponse.ok) throw new Error('Failed to save event');
+                    const { json } = await patchResponse.json();
+                    this.data = json;
+                }
+
+                // Clear edit state
                 this.editingEvent = null;
                 this.editState = null;
                 this.render();
 
-                // Start polling if there are pending enrichments (new item may need enrichment)
+                // Start polling if there are pending enrichments
                 if (this.checkForPendingEnrichments()) {
                     this.startPolling();
                 }
@@ -3097,19 +3466,42 @@
                     }
                 }, 10);
 
+                showToast('Event updated', 'success');
+
             } catch (err) {
                 console.error('Save error:', err);
                 row.classList.remove('processing');
                 row.classList.add('editing');
-                showToast('Failed to save', 'error');
+                showToast(err.message || 'Failed to save', 'error');
             }
         }
 
-        async deleteEvent(index) {
+        confirmDelete(index) {
+            this.deleteConfirmingIndex = index;
+            this.render();
+
+            // Auto-cancel after 5 seconds
+            if (this.deleteConfirmTimeout) clearTimeout(this.deleteConfirmTimeout);
+            this.deleteConfirmTimeout = setTimeout(() => {
+                this.deleteConfirmingIndex = null;
+                this.render();
+            }, 5000);
+        }
+
+        cancelDelete() {
+            if (this.deleteConfirmTimeout) clearTimeout(this.deleteConfirmTimeout);
+            this.deleteConfirmingIndex = null;
+            this.render();
+        }
+
+        async executeDelete(index) {
+            if (this.deleteConfirmTimeout) clearTimeout(this.deleteConfirmTimeout);
+            this.deleteConfirmingIndex = null;
+
             const dayIndex = this.selectedDay - 1;
             const dayData = this.data.days[dayIndex];
             const item = dayData.items[index];
-            const itemName = item.place?.name || item.description;
+            const itemName = item.enrichment?.name || item.description;
 
             // Deep copy the item for restoration
             const deletedItem = JSON.parse(JSON.stringify(item));
@@ -3153,6 +3545,45 @@
                     showToast('Failed to delete event', 'error');
                 }
             }, 3000);
+        }
+
+        async retryEnrichment(index) {
+            const dayIndex = this.selectedDay - 1;
+            const dayData = this.data.days[dayIndex];
+            const item = dayData.items[index];
+
+            if (!item) return;
+
+            // Clear error state and set to loading
+            item.enrichmentError = false;
+            item.enrichment = null;
+            this.render();
+
+            try {
+                // Call enrichment endpoint
+                const response = await fetch('/api/itinerary/enrich', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        day: dayIndex,
+                        index: index,
+                        item: item
+                    })
+                });
+
+                if (!response.ok) throw new Error('Enrichment retry failed');
+
+                const { json } = await response.json();
+                this.data = json;
+                this.render();
+                showToast('Enrichment successful!', 'success');
+
+            } catch (err) {
+                console.error('Enrichment retry error:', err);
+                item.enrichmentError = true;
+                this.render();
+                showToast('Failed to enrich event', 'error');
+            }
         }
 
         showUndoToast(message, onUndo) {
