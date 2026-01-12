@@ -1432,56 +1432,62 @@
         /* Chat Mobile */
         @media (max-width: 768px) {
             .chat-header-full {
-                padding: 20px;
+                padding: 14px 16px;
+                gap: 12px;
             }
 
             .chat-header-full::after {
-                left: 20px;
-                right: 20px;
+                left: 16px;
+                right: 16px;
             }
 
             .chat-header-icon-full {
-                width: 48px;
-                height: 48px;
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
             }
 
             .oscar-avatar {
-                width: 32px;
-                height: 32px;
+                width: 28px;
+                height: 28px;
             }
 
             .oscar-avatar::before {
-                width: 28px;
-                height: 25px;
+                width: 24px;
+                height: 22px;
                 top: 3px;
                 left: 2px;
             }
 
             .oscar-avatar::after {
-                width: 20px;
-                height: 13px;
+                width: 17px;
+                height: 11px;
                 bottom: 3px;
-                left: 6px;
+                left: 5.5px;
             }
 
             .oscar-eyes {
-                top: 10px;
-                gap: 8px;
+                top: 9px;
+                gap: 7px;
             }
 
             .oscar-eye {
-                width: 6px;
-                height: 7px;
+                width: 5px;
+                height: 6px;
             }
 
             .oscar-nose {
-                width: 8px;
-                height: 6px;
-                bottom: 13px;
+                width: 7px;
+                height: 5px;
+                bottom: 11px;
             }
 
             .chat-header-text h1 {
-                font-size: 20px;
+                font-size: 18px;
+            }
+
+            .chat-header-text p {
+                font-size: 12px;
             }
 
             .chat-header-status {
@@ -1489,8 +1495,9 @@
             }
 
             .chat-messages-full {
-                padding: 20px;
-                gap: 20px;
+                padding: 16px;
+                gap: 16px;
+                justify-content: flex-start;
             }
 
             .chat-message-full.user .chat-message-content-full {
@@ -1512,32 +1519,45 @@
             }
 
             .chat-input-area-full {
-                padding: 16px 20px;
-                padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+                padding: 12px 16px;
+                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
             }
 
             .chat-input-full {
-                padding: 16px 20px;
-                padding-right: 48px;
+                padding: 14px 16px;
+                padding-right: 46px;
             }
 
             .chat-send-full {
-                width: 40px;
-                height: 40px;
-                right: 6px;
+                width: 38px;
+                height: 38px;
+                right: 5px;
             }
 
             .welcome-content {
-                padding: 20px;
+                padding: 16px;
             }
 
             .welcome-content .oscar-greeting {
-                font-size: 20px;
+                font-size: 18px;
+                margin-bottom: 4px;
+            }
+
+            .welcome-content p {
+                font-size: 13px;
+                line-height: 1.5;
+                max-width: 260px;
+            }
+
+            .welcome-suggestions {
+                margin-top: 12px;
+                padding-top: 12px;
+                gap: 6px;
             }
 
             .suggestion-chip {
                 font-size: 12px;
-                padding: 6px 12px;
+                padding: 6px 10px;
             }
         }
 
