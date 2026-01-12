@@ -383,64 +383,20 @@
             text-overflow: ellipsis;
         }
 
-        .event-hook {
-            font-size: 13px;
-            color: var(--text-secondary);
-            font-style: italic;
-            flex-shrink: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 180px;
-        }
-
-        .event-hook.needs-details {
-            color: var(--text-tertiary, #999);
-            opacity: 0.7;
-        }
-
-        .event-hook.loading {
+        .event-loading {
+            font-size: 12px;
             color: #888;
             font-style: italic;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
         }
 
-        .event-hook.loading .spinner {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border: 2px solid #ccc;
-            border-top-color: #666;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-
-        .event-hook.error {
+        .event-error {
             color: #d97706;
-            font-style: italic;
             cursor: pointer;
-            text-decoration: underline;
-            text-decoration-color: #d97706;
-            text-decoration-style: dotted;
-        }
-
-        .event-hook.error:hover {
-            color: #dc2626;
-            text-decoration-color: #dc2626;
         }
 
         @keyframes spin {
             to {
                 transform: rotate(360deg);
-            }
-        }
-
-        @media (max-width: 600px) {
-            .event-hook {
-                display: none;
             }
         }
 
@@ -2660,7 +2616,7 @@
                         return;
                     }
                     // If clicking error message, retry enrichment
-                    if (e.target.closest('.event-hook.error')) {
+                    if (e.target.closest('.event-error')) {
                         e.stopPropagation();
                         this.retryEnrichment(index);
                         return;
@@ -2921,14 +2877,12 @@
                 hasError ? 'error' : ''
             ].filter(Boolean).join(' ');
 
-            // Show loading indicator, error, or content
-            let hookHtml = '';
+            // Show loading indicator or error only (hook display removed)
+            let loadingHtml = '';
             if (isLoading) {
-                hookHtml = '<span class="event-hook loading"><span class="spinner"></span>Enriching...</span>';
+                loadingHtml = '<span class="event-loading">Enriching...</span>';
             } else if (hasError) {
-                hookHtml = '<span class="event-hook error">⚠️ Couldn\'t enrich</span>';
-            } else if (place?.hook) {
-                hookHtml = `<span class="event-hook${place?.needsDetails ? ' needs-details' : ''}">${this.escapeHtml(place.hook)}</span>`;
+                loadingHtml = '<span class="event-error">⚠️</span>';
             }
 
             return `
@@ -2937,7 +2891,7 @@
                     <span class="event-type-dot ${typeClass}"></span>
                     <span class="event-time">${this.formatTime(item.time) || ''}</span>
                     <span class="event-name">${this.escapeHtml(name)}</span>
-                    ${hookHtml}
+                    ${loadingHtml}
                     ${badgeHtml}
                     ${neighborhood ? `<span class="event-neighborhood">${neighborhood}</span>` : ''}
                     <svg class="event-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
