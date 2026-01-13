@@ -624,9 +624,9 @@ Make the minimal change needed. Do not add explanations.`;
 };
 
 // Create Oscar agent (Gemini-powered)
+// Oscar now uses direct database access instead of itineraryManager
 const oscarAgent = genAINew ? createOscarAgent({
-  genAI: genAINew,
-  itineraryManager
+  genAI: genAINew
 }) : null;
 
 function regenerateItineraryTxt(data) {
@@ -1146,11 +1146,25 @@ app.post('/api/chat', requireAuth, async (req, res) => {
     if (oscarAgent) {
       console.log('Using Oscar agent (Gemini 2.5 Flash)');
 
+      const userId = req.user.id;
+
       const result = await oscarAgent.chat(message, {
         chatHistory: req.session.chatHistory,
         itineraryData: itineraryDataCache,
-        userId: req.user.id  // Pass user ID for database operations
+        userId: userId,
+        // Callback for Oscar to trigger enrichment after adding items
+        triggerEnrichment: (uid) => {
+          runBackgroundEnrichment(uid).catch(err =>
+            console.error('Background enrichment error:', err)
+          );
+        }
       });
+
+      // If Oscar used tools (likely modified data), refresh the cache from database
+      if (result.toolsUsed) {
+        console.log('Oscar used tools, refreshing itinerary cache from database');
+        itineraryDataCache = await loadItineraryFromDb(userId);
+      }
 
       // Add to history
       req.session.chatHistory.push({ role: 'user', content: message });
