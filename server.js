@@ -227,7 +227,11 @@ function setNestedValue(obj, path, value) {
  * Run background enrichment
  * Enriches items from cache and saves to database
  */
-async function runBackgroundEnrichment(userId = process.env.DEFAULT_USER_ID || '1') {
+async function runBackgroundEnrichment(userId) {
+  if (!userId) {
+    console.log('Background enrichment skipped: no user context');
+    return;
+  }
   if (!genAINew) {
     console.error('Background enrichment skipped: Gemini API not configured');
     return;
@@ -462,13 +466,18 @@ async function loadItineraryFromDb(userId) {
 
 // Check database connectivity on startup
 db.pool.query('SELECT NOW()')
-  .then(() => {
+  .then(async () => {
     console.log('PostgreSQL connection successful');
-    // Load default user's itinerary (assuming first allowed email)
-    const defaultUserId = process.env.DEFAULT_USER_ID || '1';
-    loadItineraryFromDb(defaultUserId).catch(err =>
-      console.error('Startup itinerary load error:', err.message)
-    );
+    // Try to load first user's itinerary at startup (for faster first request)
+    try {
+      const firstUser = await db.getUserByEmail('self.gt@gmail.com');
+      if (firstUser) {
+        await loadItineraryFromDb(firstUser.id);
+        console.log('Loaded itinerary for default user');
+      }
+    } catch (err) {
+      console.log('Startup itinerary load skipped:', err.message);
+    }
   })
   .catch(err => {
     console.error('PostgreSQL connection failed:', err.message);
