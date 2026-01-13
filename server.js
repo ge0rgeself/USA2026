@@ -409,6 +409,47 @@ function migrateDescriptionToPrompt(data) {
 }
 
 /**
+ * Format PostgreSQL DATE to "Jan 14" format
+ */
+function formatDate(dateValue) {
+  if (!dateValue) return '';
+  const d = new Date(dateValue);
+  const month = d.toLocaleDateString('en-US', { month: 'short' });
+  const day = d.getDate();
+  return `${month} ${day}`;
+}
+
+/**
+ * Format PostgreSQL TIME to user-friendly format
+ */
+function formatTime(timeValue) {
+  if (!timeValue) return '';
+
+  // timeValue is like "18:00:00" or "19:30:00"
+  const [hours, minutes] = timeValue.split(':').map(Number);
+
+  // Convert 24h to 12h
+  const period = hours >= 12 ? 'pm' : 'am';
+  const hour12 = hours % 12 || 12;
+
+  // Only include minutes if not :00
+  if (minutes === 0) {
+    return `${hour12}${period}`;
+  } else {
+    return `${hour12}:${minutes.toString().padStart(2, '0')}${period}`;
+  }
+}
+
+/**
+ * Get day of week abbreviation from date
+ */
+function getDayOfWeek(dateValue) {
+  if (!dateValue) return '';
+  const d = new Date(dateValue);
+  return d.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+/**
  * Load itinerary from database for a specific user
  * Reconstructs the in-memory format from normalized DB tables
  */
@@ -436,13 +477,13 @@ async function loadItineraryFromDb(userId) {
         }
       } : null,
       days: days.map(day => ({
-        date: day.date,
-        dayOfWeek: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
+        date: formatDate(day.date),
+        dayOfWeek: getDayOfWeek(day.date),
         title: day.title || '',
         items: day.items.map(item => ({
           id: item.id,
           prompt: item.prompt,
-          time: item.timeStart, // For compatibility
+          time: formatTime(item.timeStart),
           timeType: item.timeStart ? 'specific' : 'none',
           description: item.description,
           type: item.type,
