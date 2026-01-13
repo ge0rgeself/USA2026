@@ -1161,9 +1161,15 @@ app.post('/api/chat', requireAuth, async (req, res) => {
       });
 
       // If Oscar used tools (likely modified data), refresh the cache from database
+      // and trigger enrichment for any new items
       if (result.toolsUsed) {
         console.log('Oscar used tools, refreshing itinerary cache from database');
         itineraryDataCache = await loadItineraryFromDb(userId);
+
+        // Now that cache is fresh, trigger enrichment for any unenriched items
+        runBackgroundEnrichment(userId).catch(err =>
+          console.error('Post-Oscar enrichment error:', err)
+        );
       }
 
       // Add to history
