@@ -1,5 +1,7 @@
 # PostgreSQL Data Model Design
 
+**Status: IMPLEMENTED** (January 13, 2025)
+
 ## Overview
 
 Migrate from file-based storage (itinerary.txt + itinerary.json + GCS) to PostgreSQL on Cloud SQL. This establishes a proper relational data model with days as the core unit, enabling future extensibility as a life planner beyond just trip planning.

@@ -4,10 +4,13 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-NYC trip planner for January 14-18, 2025. Features:
+Life planner application, currently used for NYC trip (January 14-18, 2025). Built as a day-centric calendar with PostgreSQL backend.
+
+**Features:**
 - **Calendar** - Day-by-day itinerary with expandable event details
 - **Editor** - Edit itinerary.txt directly, auto-parses on save
 - **Chat** - Oscar the bulldog assistant with conversation memory
+- **Database** - PostgreSQL on Cloud SQL (source of truth)
 - Google OAuth authentication (whitelist: self.gt@gmail.com, valmikh17@gmail.com)
 - Gemini-powered place enrichment (addresses, tips, hours)
 - Hosted on Google Cloud Run with CI/CD via GitHub Actions
@@ -21,47 +24,98 @@ NYC trip planner for January 14-18, 2025. Features:
 | `index.html` | Main SPA (Calendar, Editor, Chat views) |
 | `login.html` | Google Sign-In page |
 | `server.js` | Express server with OAuth, chat API, itinerary endpoints |
+| `lib/db.js` | PostgreSQL client with connection pooling and queries |
 | `lib/oscar-agent.js` | Oscar chatbot - Gemini with agentic function calling |
 | `lib/parser.js` | Parses itinerary.txt into structured JSON |
 | `lib/enricher.js` | Enriches places with Gemini Maps grounding |
 | `lib/place-service.js` | Gemini enrichment pipeline with Maps grounding |
+| `db/migrations/` | SQL schema migrations (auto-run on deploy) |
+| `db/migrate.js` | Migration runner utility |
+| `db/seed-from-json.js` | One-time data migration from JSON to Postgres |
 | `preferences.md` | Traveler preferences (dietary, budget, pace, etc.) |
-| `itinerary.txt` | Source of truth for trip itinerary (editable) |
-| `itinerary.json` | Parsed + enriched itinerary (auto-generated) |
-| `tools/check_enrichment.js` | Audit utility to check enrichment coverage |
+| `itinerary.txt` | Legacy text format (still supported for editing) |
 | `Dockerfile` | Container config for Cloud Run |
 | `.github/workflows/deploy.yml` | CI/CD - auto-deploys on push to main |
 
-## Itinerary Format
+## Database Schema
 
-The `itinerary.txt` file uses a specific format that the parser understands:
+PostgreSQL on Cloud SQL (`nyc-planner-db` instance, `nyc_trip` database).
 
+### Tables
+
+**users**
+- `id` (UUID, PK)
+- `email` (unique)
+- `name`
+- `preferences` (JSONB)
+- `created_at`
+
+**days** - Core entity, one per date per user
+- `id` (UUID, PK)
+- `user_id` (FK → users)
+- `date` (unique per user)
+- `title`
+- `notes`
+- `created_at`, `updated_at`
+
+**items** - Events within a day
+- `id` (UUID, PK)
+- `day_id` (FK → days, CASCADE)
+- `prompt` - User input for enrichment
+- `description` - Display text
+- `time_start`, `time_end` (TIME)
+- `type` (food/activity/transit/culture/entertainment)
+- `status` (primary/optional/backup)
+- `sort_order`
+- `enrichment` (JSONB)
+- `created_at`, `updated_at`
+
+**accommodations**
+- `id` (UUID, PK)
+- `user_id` (FK → users)
+- `name`, `address`, `neighborhood`
+- `check_in`, `check_out` (DATE)
+- `enrichment` (JSONB)
+
+**trips** - Lightweight date-range grouping
+- `id` (UUID, PK)
+- `user_id` (FK → users)
+- `name`
+- `start_date`, `end_date`
+
+### Common Queries
+
+```sql
+-- Get days with items for a date range
+SELECT d.*, json_agg(i.*) as items
+FROM days d
+LEFT JOIN items i ON i.day_id = d.id
+WHERE d.user_id = $1 AND d.date BETWEEN $2 AND $3
+GROUP BY d.id ORDER BY d.date;
+
+-- Items needing enrichment
+SELECT i.* FROM items i
+JOIN days d ON i.day_id = d.id
+WHERE d.user_id = $1 AND i.enrichment IS NULL;
+
+-- Current accommodation
+SELECT * FROM accommodations
+WHERE user_id = $1 AND check_in <= $2 AND check_out > $2;
 ```
-# Hotel
-Hotel Name at Address, Neighborhood
 
-# Reservations
-- Reservation details
+### Database Access
 
-# Jan 14 (Tue) - Day Title
-- 7:30pm: Restaurant Name, Neighborhood
-- 4-6pm: Activity description
-- 6-6:30pm: Time range with minutes
-- fallback: Backup option
-- 9:30pm (optional): Optional activity
+**Cloud SQL Studio:** https://console.cloud.google.com/sql/instances/nyc-planner-db/studio
+- Select database: `nyc_trip` (not `postgres`)
 
-# Notes
-- General notes
+**Local connection:**
+```bash
+# Get connection string
+gcloud secrets versions access latest --secret=database-url --project=glexpenses-c46fb
+
+# Authorize your IP (valid 5 min)
+gcloud sql connect nyc-planner-db --project=glexpenses-c46fb --user=postgres
 ```
-
-**Time formats supported:**
-- Simple: `7:30pm`, `11am`
-- Ranges: `4-6pm`, `1:30-4pm`, `6-6:30pm`
-- Keywords: `morning`, `afternoon`, `evening`, `dinner`, `late`
-
-**Item modifiers:**
-- `fallback:` prefix marks backup options
-- `(optional)` suffix marks optional items
 
 ## Development
 
@@ -70,7 +124,14 @@ Hotel Name at Address, Neighborhood
 npm install
 npm start
 # Open http://localhost:8080
-# Note: OAuth won't work locally (callback URL mismatch)
+# Note: OAuth and database won't work locally without additional setup
+```
+
+### Database Migrations
+
+Migrations run automatically on deploy. To run manually:
+```bash
+DATABASE_URL=... node db/migrate.js
 ```
 
 ### Deployment
@@ -89,6 +150,23 @@ gcloud run deploy nyc-trip --source . --region us-central1
 
 ## Architecture
 
+### Data Flow
+
+```
+User action (Calendar/Editor/Chat)
+    ↓
+API endpoint (server.js)
+    ↓
+Database query (lib/db.js)
+    ↓
+PostgreSQL (Cloud SQL)
+    ↓
+Response → In-memory cache → UI
+```
+
+**Source of truth:** PostgreSQL database
+**Legacy support:** itinerary.txt still works for bulk editing (parsed → synced to DB)
+
 ### App Sections
 - **Calendar** - Timeline view of trip itinerary by day
 - **Editor** - Markdown editor for itinerary notes
@@ -98,7 +176,8 @@ gcloud run deploy nyc-trip --source . --region us-central1
 1. Unauthenticated users → redirect to `/login`
 2. Click "Sign in with Google" → Google OAuth consent
 3. Callback validates email against whitelist
-4. 7-day session cookie set on success
+4. User record created/retrieved from database
+5. 7-day session cookie set on success
 
 ### Server Routes
 
@@ -112,8 +191,11 @@ gcloud run deploy nyc-trip --source . --region us-central1
 - `GET /` - Main app (protected)
 
 **Itinerary API:**
-- `GET /api/itinerary` - Get itinerary (txt + json)
-- `PUT /api/itinerary` - Update itinerary, triggers re-parse + enrichment
+- `GET /api/itinerary` - Get itinerary (from database)
+- `PUT /api/itinerary` - Update itinerary, syncs to database
+- `PATCH /api/itinerary/item` - Update single item
+- `POST /api/itinerary/item` - Add item
+- `DELETE /api/itinerary/item` - Remove item
 - `POST /api/itinerary/chat-update` - AI-powered itinerary update from chat
 
 **Chat API:**
@@ -131,69 +213,48 @@ Oscar is an English bulldog puppy persona powered by Gemini 2.5 Flash with agent
 |------|---------|
 | `searchPlaces` | Search restaurants, bars, attractions via Google Maps |
 | `updateItinerary` | Add, modify, or remove items from the trip |
-| `getPreferences` | Read traveler preferences from `preferences.md` |
-| `getItinerary` | Query current schedule for any day |
+| `getPreferences` | Read traveler preferences from database or preferences.md |
+| `getItinerary` | Query current schedule for any day (from database) |
 
 **How it works:**
 1. User sends a message
 2. Oscar (Gemini) decides which tools to call
-3. Tools execute and return results
+3. Tools execute and return results (querying/updating database)
 4. Oscar generates a natural response using the data
 
 **Features:**
 - Agentic: Oscar autonomously decides when to search, check preferences, or update itinerary
 - Google Maps grounding: Real-time place data (addresses, hours, ratings)
 - Conversation memory: Up to 20 messages per session
-- Personalized: Reads `preferences.md` for dietary restrictions, budget, pace
+- Personalized: Reads preferences for dietary restrictions, budget, pace
 - Friendly bulldog personality with occasional puns
 
-**Key files:**
-- `lib/oscar-agent.js` - Tool definitions and agentic loop
-- `preferences.md` - Traveler preferences (edit to customize)
+## Enrichment
 
-**Clear chat:** Users can reset conversation via Clear button or `POST /api/chat/clear`
+### How it works
 
-## Parser & Enricher
+Items with `enrichment: null` are automatically enriched in the background:
+1. `findItemsNeedingEnrichment()` identifies items without enrichment
+2. `placeService.enrichBatch()` calls Gemini with Google Maps grounding
+3. Results saved to database via `db.updateItemEnrichment()`
 
-### Parser (`lib/parser.js`)
+### Enrichment Data Structure
 
-Converts `itinerary.txt` → structured JSON:
-- Extracts hotel, reservations, days, notes
-- Parses time formats (ranges, keywords, optional suffix)
-- Infers item types (food, culture, entertainment, transit, activity)
-
-### Enricher (`lib/enricher.js`)
-
-Enhances parsed data with real place info via Gemini:
-- Uses Google Maps grounding for accurate addresses
-- Adds: address, neighborhood, hours, price, tip, website
-- Supports walking routes with waypoints
-- Falls back gracefully if Gemini API unavailable
-
-**Data flow:** `itinerary.txt` → parser → enricher → `itinerary.json` → Calendar UI
-
-### Data Structure
-
-Each item in the itinerary has three main fields:
-
-- **`description`** - Original text from itinerary.txt (preserved for reference)
-- **`prompt`** - User input text used for enrichment (defaults to description)
-- **`enrichment`** - Gemini-generated data with:
-  - `name` - Place name
-  - `hook` - Short descriptive tagline (1-2 sentences)
-  - `tip` - Insider tip or recommendation (singular, not "tips")
-  - `vibe` - Atmosphere description
-  - `hours` - Operating hours
-  - `price` - Price level (e.g., "$$")
-  - `address` - Full street address
-  - `neighborhood` - Area/district
-  - `mapsUrl` - Google Maps link
-  - `website` - Official website
-  - `walkingMins` - Walking time (for routes)
-
-**Migration:** On data load, items with `description` but no `prompt` are automatically migrated to use `description` as `prompt`.
-
-**Display logic:** Activities without detailed place data still show the `hook` field for context.
+```json
+{
+  "name": "Display name",
+  "hook": "5-8 word memorable tagline",
+  "tip": "Insider practical advice",
+  "vibe": "Atmosphere description",
+  "hours": "Operating hours",
+  "price": "Price level ($$)",
+  "address": "Full street address",
+  "neighborhood": "Area abbreviation",
+  "mapsUrl": "Google Maps URL",
+  "website": "Official website",
+  "walkingMins": "Minutes from accommodation"
+}
+```
 
 ## Google Cloud Resources
 
@@ -202,7 +263,8 @@ Each item in the itinerary has three main fields:
 | Service | Resource |
 |---------|----------|
 | Cloud Run | `nyc-trip` (us-central1) |
-| Secret Manager | `anthropic-api-key`, `google-client-id`, `google-client-secret`, `google-gemini-api-key` |
+| Cloud SQL | `nyc-planner-db` (PostgreSQL 15, db-f1-micro) |
+| Secret Manager | `database-url`, `anthropic-api-key`, `google-client-id`, `google-client-secret`, `google-gemini-api-key`, `session-secret` |
 | IAM | `github-deploy` service account (for CI/CD) |
 
 ## CI/CD
@@ -210,7 +272,8 @@ Each item in the itinerary has three main fields:
 GitHub Actions workflow (`.github/workflows/deploy.yml`):
 - Triggers on push to `main`
 - Authenticates via `GCP_SA_KEY` secret (service account JSON)
-- Deploys to Cloud Run using `google-github-actions/deploy-cloudrun`
+- Deploys to Cloud Run with Cloud SQL connection
+- Migrations run automatically on container startup
 
 ## Design
 
@@ -220,44 +283,33 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`):
 - Accent: `#c9463d` (coral) for active states
 - Typography: Playfair Display (serif headings), DM Sans (body)
 
-## Development Tools
-
-### Check Enrichment Coverage
-
-Use `tools/check_enrichment.js` to audit which items lack enrichment data:
-
-```bash
-node tools/check_enrichment.js
-```
-
-Shows items without enrichment, helping identify gaps in the enrichment pipeline.
-
 ## Troubleshooting
+
+### Database issues
+- **Can't see tables:** In Cloud SQL Studio, select `nyc_trip` database (not `postgres`)
+- **Connection timeout:** IP authorization expires after 5 minutes, re-run `gcloud sql connect`
+- **UUID errors:** Old sessions may have invalid user IDs, clear cookies and re-login
 
 ### Enrichment not showing
 - **Check Gemini API key:** Verify `google-gemini-api-key` secret is set in Cloud Run
 - **Check field names:** Use singular `tip` (not `tips`) in enrichment object
 - **Activities:** Should show `hook` text even without full place data
-- **Context:** Enrichment receives only item type (e.g., "(activity)"), not full day context
 
 ### OAuth failing locally
 - **Expected behavior:** OAuth won't work at `localhost:8080` due to callback URL mismatch
 - **Workaround:** Test authentication only on production Cloud Run deployment
-- **Alternative:** Use Cloud Run local emulator with proper callback configuration
 
-### Parser errors
+### Parser errors (itinerary.txt)
 - **Time formats:** Use `7:30pm`, `4-6pm`, or keywords like `morning`
 - **Item modifiers:** Prefix with `fallback:` or suffix with `(optional)`
 - **Headers:** Days must start with `# Jan 14 (Tue) - Title` format
-- **Reference:** See "Itinerary Format" section above for complete syntax
-
-### Session issues
-- **Session secret:** Currently hardcoded as `'your-secret-key'` in server.js
-- **Cookie duration:** 7 days (configured in passport session)
-- **Clear session:** Use `/logout` endpoint or clear browser cookies
 
 ### Deployment issues
 - **Check GitHub Actions:** Run `gh run list` to see deployment status
 - **View logs:** `gcloud run services logs read nyc-trip --region us-central1`
 - **Manual deploy:** `gcloud run deploy nyc-trip --source . --region us-central1`
-- **Secrets:** Ensure all 4 secrets are configured in Secret Manager
+- **Secrets:** Ensure all secrets are configured in Secret Manager
+
+### Session issues
+- **Cookie duration:** 7 days (configured in passport session)
+- **Clear session:** Use `/logout` endpoint or clear browser cookies
