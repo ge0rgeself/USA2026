@@ -171,6 +171,39 @@ function convertToNewFormat(parsed) {
 }
 
 /**
+ * Parse time string to database format (HH:MM:SS)
+ * Handles: "7pm", "7:30pm", "2-4pm" (takes start time), "morning", "afternoon", etc.
+ * @param {string} timeStr - Natural language time
+ * @returns {string|null} - Time in HH:MM:SS format or null
+ */
+function parseTimeString(timeStr) {
+  if (!timeStr) return null;
+
+  const lower = timeStr.toLowerCase().trim();
+
+  // Handle keywords
+  if (lower === 'morning' || lower === 'am') return '09:00:00';
+  if (lower === 'noon' || lower === 'midday') return '12:00:00';
+  if (lower === 'afternoon') return '14:00:00';
+  if (lower === 'evening') return '18:00:00';
+  if (lower === 'night') return '20:00:00';
+
+  // Handle "7pm", "7:30pm", "14:00", "2-4pm" (just take start time)
+  const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (!match) return null;
+
+  let hours = parseInt(match[1]);
+  const minutes = match[2] ? parseInt(match[2]) : 0;
+  const meridiem = match[3]?.toLowerCase();
+
+  // Convert to 24-hour format
+  if (meridiem === 'pm' && hours !== 12) hours += 12;
+  if (meridiem === 'am' && hours === 12) hours = 0;
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+}
+
+/**
  * Find items needing enrichment
  */
 function findItemsNeedingEnrichment(data) {
@@ -932,11 +965,11 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
       enrichment: promptChanged ? null : existingItem.enrichment
     };
 
-    // Update in database
+    // Update in database (parse time string to DB format)
     await db.updateItem(itemId, {
       prompt: newPrompt,
       description: item.description || newPrompt,
-      timeStart: item.time,
+      timeStart: parseTimeString(item.time),
       status: item.status || 'primary'
     });
 
@@ -991,11 +1024,11 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
       dayRecord = await db.createDay(userId, dayData.date, dayData.title);
     }
 
-    // Create new item in database
+    // Create new item in database (parse time string to DB format)
     const dbItem = await db.createItem(dayRecord.id, {
       prompt: userPrompt,
       description: item.description || userPrompt,
-      timeStart: item.time || null,
+      timeStart: parseTimeString(item.time),
       type: item.type || 'activity',
       status: item.status || 'primary',
       sortOrder: dayData.items.length
