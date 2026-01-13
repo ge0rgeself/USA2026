@@ -1997,26 +1997,7 @@
         </header>
 
         <nav class="day-pills" id="day-pills">
-            <button class="day-pill active" data-day="1">
-                <span class="day-pill-date">14</span>
-                <span class="day-pill-dow">Tue</span>
-            </button>
-            <button class="day-pill" data-day="2">
-                <span class="day-pill-date">15</span>
-                <span class="day-pill-dow">Wed</span>
-            </button>
-            <button class="day-pill" data-day="3">
-                <span class="day-pill-date">16</span>
-                <span class="day-pill-dow">Thu</span>
-            </button>
-            <button class="day-pill" data-day="4">
-                <span class="day-pill-date">17</span>
-                <span class="day-pill-dow">Fri</span>
-            </button>
-            <button class="day-pill" data-day="5">
-                <span class="day-pill-date">18</span>
-                <span class="day-pill-dow">Sat</span>
-            </button>
+            <!-- Day pills rendered dynamically from data -->
         </nav>
 
         <main id="event-list" class="event-list">
@@ -2484,12 +2465,38 @@
             });
         }
 
+        renderDayPills() {
+            if (!this.data?.days?.length) {
+                this.pillsContainer.innerHTML = '<span class="text-muted">No days available</span>';
+                return;
+            }
+
+            const html = this.data.days.map((day, index) => {
+                const dayNum = index + 1;
+                const isActive = dayNum === this.selectedDay;
+                // Extract date number (e.g., "14" from "Jan 14")
+                const dateMatch = day.date.match(/\d+/);
+                const dateNum = dateMatch ? dateMatch[0] : dayNum;
+                return `
+                    <button class="day-pill${isActive ? ' active' : ''}" data-day="${dayNum}">
+                        <span class="day-pill-date">${dateNum}</span>
+                        <span class="day-pill-dow">${day.dayOfWeek}</span>
+                    </button>
+                `;
+            }).join('');
+
+            this.pillsContainer.innerHTML = html;
+        }
+
         async load() {
             try {
                 const response = await fetch('/api/itinerary');
                 const result = await response.json();
                 // Handle both old format {txt, json} and new format (direct JSON)
                 this.data = result.json || result;
+
+                // Render day pills from data
+                this.renderDayPills();
                 this.render();
 
                 // Start polling if there are pending enrichments
@@ -2520,10 +2527,23 @@
         }
 
         render() {
-            if (!this.data) return;
+            if (!this.data) {
+                this.container.innerHTML = '<p class="text-muted" style="padding: 2rem; text-align: center;">Loading...</p>';
+                return;
+            }
 
-            const dayData = this.data.days[this.selectedDay - 1];
-            if (!dayData) return;
+            const dayData = this.data.days?.[this.selectedDay - 1];
+            if (!dayData) {
+                // Day doesn't exist - show message and reset to first available day
+                console.warn(`Day ${this.selectedDay} not found in data, resetting to day 1`);
+                if (this.data.days?.length > 0) {
+                    this.selectedDay = 1;
+                    this.renderDayPills();
+                    return this.render();
+                }
+                this.container.innerHTML = '<p class="text-muted" style="padding: 2rem; text-align: center;">No itinerary data available</p>';
+                return;
+            }
 
             // Update header
             const fullDayName = this.getFullDayName(dayData.dayOfWeek);

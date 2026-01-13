@@ -16,7 +16,13 @@ const ALLOWED_EMAILS = ['self.gt@gmail.com', 'valmikh17@gmail.com'];
 
 // Session configuration
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'nyc-trip-secret-key-2025',
+  secret: process.env.SESSION_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET environment variable is required in production');
+    }
+    console.warn('⚠️  Using development session secret - NOT SAFE FOR PRODUCTION');
+    return 'dev-session-secret-not-for-prod';
+  })(),
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -634,13 +640,22 @@ app.put('/api/itinerary', requireAuth, async (req, res) => {
     // Also save txt for editor
     await writeItinerary(content);
 
-    // Return to user immediately
-    res.json({ success: true, json: itineraryData });
+    // Check if enrichment is needed
+    const needsEnrichment = findItemsNeedingEnrichment(itineraryData).length > 0;
+
+    // Return to user immediately with enrichment status
+    res.json({
+      success: true,
+      json: itineraryData,
+      enrichmentQueued: needsEnrichment
+    });
 
     // Background enrich (non-blocking)
-    runBackgroundEnrichment().catch(err =>
-      console.error('Background enrichment error:', err)
-    );
+    if (needsEnrichment) {
+      runBackgroundEnrichment().catch(err =>
+        console.error('Background enrichment error:', err)
+      );
+    }
 
   } catch (err) {
     console.error('Save error:', err);
@@ -721,8 +736,12 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
     await writeItinerary(txt);
     await writeItineraryJson(itineraryData);
 
-    // Return immediately
-    res.json({ success: true, json: itineraryData });
+    // Return immediately with enrichment status
+    res.json({
+      success: true,
+      json: itineraryData,
+      enrichmentQueued: promptChanged
+    });
 
     // Background enrich if prompt changed
     if (promptChanged) {
@@ -785,8 +804,12 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
     await writeItinerary(txt);
     await writeItineraryJson(itineraryData);
 
-    // Return immediately
-    res.json({ success: true, json: itineraryData });
+    // Return immediately with enrichment status
+    res.json({
+      success: true,
+      json: itineraryData,
+      enrichmentQueued: true  // New items always need enrichment
+    });
 
     // Background enrich the new item
     runBackgroundEnrichment().catch(err =>
@@ -986,13 +1009,22 @@ Make the minimal change needed. Do not add explanations.`;
     await writeItinerary(newTxt);
     await writeItineraryJson(itineraryData);
 
-    // Return to user immediately
-    res.json({ success: true, json: itineraryData });
+    // Check if enrichment is needed
+    const needsEnrichment = findItemsNeedingEnrichment(itineraryData).length > 0;
+
+    // Return to user immediately with enrichment status
+    res.json({
+      success: true,
+      json: itineraryData,
+      enrichmentQueued: needsEnrichment
+    });
 
     // Trigger background enrichment for new items
-    runBackgroundEnrichment().catch(err =>
-      console.error('Background enrichment error:', err)
-    );
+    if (needsEnrichment) {
+      runBackgroundEnrichment().catch(err =>
+        console.error('Background enrichment error:', err)
+      );
+    }
 
   } catch (err) {
     console.error('Chat update error:', err);
