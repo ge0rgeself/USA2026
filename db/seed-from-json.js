@@ -167,7 +167,7 @@ async function migrateData() {
     // 2. Create trip
     console.log('\nCreating trip...');
     const tripResult = await pool.query(
-      `INSERT INTO trips (name, start_date, end_date, created_by)
+      `INSERT INTO trips (name, start_date, end_date, user_id)
        VALUES ($1, $2, $3, $4)
        RETURNING id`,
       ['NYC January 2025', '2025-01-14', '2025-01-18', userIds.george]
@@ -175,24 +175,16 @@ async function migrateData() {
     const tripId = tripResult.rows[0].id;
     console.log(`  - Created trip "NYC January 2025" (${tripResult.rows[0].id})`);
 
-    // Add both users to trip
-    await pool.query(
-      `INSERT INTO trip_members (trip_id, user_id)
-       VALUES ($1, $2), ($1, $3)`,
-      [tripId, userIds.george, userIds.valmikh]
-    );
-    console.log(`  - Added George and Valmikh as trip members`);
-
     // 3. Create accommodation
     if (itineraryData.hotel && itineraryData.hotel.enrichment) {
       console.log('\nCreating accommodation...');
       const hotel = itineraryData.hotel.enrichment;
       const accomResult = await pool.query(
-        `INSERT INTO accommodations (trip_id, name, address, neighborhood, check_in_date, check_out_date, enrichment)
+        `INSERT INTO accommodations (user_id, name, address, neighborhood, check_in, check_out, enrichment)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id`,
         [
-          tripId,
+          userIds.george,
           hotel.name || 'Untitled at 3 Freeman Alley',
           hotel.address,
           hotel.neighborhood,
@@ -212,41 +204,51 @@ async function migrateData() {
       const dateStr = parseDate(dayData.date);
 
       const dayResult = await pool.query(
-        `INSERT INTO days (trip_id, date, day_of_week, title)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO days (user_id, date, title)
+         VALUES ($1, $2, $3)
          RETURNING id`,
-        [tripId, dateStr, dayData.dayOfWeek, dayData.title]
+        [userIds.george, dateStr, dayData.title]
       );
       const dayId = dayResult.rows[0].id;
       console.log(`  - Created day "${dateStr}" (${dayData.title})`);
 
       // Create items for this day
+      let sortOrder = 0;
       for (const itemData of dayData.items) {
         const { start: timeStart, end: timeEnd } = parseTime(itemData.time);
         const itemType = itemData.type || 'activity';
-        const isBackup = itemData.fallback || false;
-        const isOptional = itemData.optional || false;
+        // Map old boolean flags to status
+        let status = 'primary';
+        if (itemData.status) {
+          status = itemData.status;
+        } else if (itemData.fallback) {
+          status = 'backup';
+        } else if (itemData.optional) {
+          status = 'optional';
+        }
 
         const itemResult = await pool.query(
           `INSERT INTO items (
             day_id,
+            prompt,
             description,
             type,
             time_start,
             time_end,
-            is_backup,
-            is_optional,
+            status,
+            sort_order,
             enrichment
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           RETURNING id`,
           [
             dayId,
+            itemData.prompt || itemData.description,
             itemData.description,
             itemType,
             timeStart,
             timeEnd,
-            isBackup,
-            isOptional,
+            status,
+            sortOrder++,
             itemData.enrichment ? JSON.stringify(itemData.enrichment) : null,
           ]
         );
@@ -256,36 +258,7 @@ async function migrateData() {
 
     console.log(`  - Created ${itemCount} items across all days`);
 
-    // 5. Create reservations as items on the first day
-    if (itineraryData.reservations && itineraryData.reservations.length > 0) {
-      console.log('\nCreating reservations...');
-
-      // Get first day ID
-      const firstDayResult = await pool.query(
-        `SELECT id FROM days WHERE trip_id = $1 ORDER BY date ASC LIMIT 1`,
-        [tripId]
-      );
-
-      if (firstDayResult.rows.length > 0) {
-        const firstDayId = firstDayResult.rows[0].id;
-
-        for (const resData of itineraryData.reservations) {
-          await pool.query(
-            `INSERT INTO items (day_id, description, type, is_backup, is_optional, enrichment)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [
-              firstDayId,
-              resData.description,
-              'reservation',
-              false,
-              false,
-              resData.enrichment ? JSON.stringify(resData.enrichment) : null,
-            ]
-          );
-        }
-        console.log(`  - Created ${itineraryData.reservations.length} reservations`);
-      }
-    }
+    // 5. Reservations - skipped (YAGNI - we decided not to track reservations separately)
 
     console.log('\n✅ Migration completed successfully!');
     console.log(`\nSummary:`);
