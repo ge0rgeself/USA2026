@@ -4,3 +4,6 @@ node_modules/
 nul
 itinerary.json
 .worktrees/
+.logs/
+*.bak
+.DS_Store

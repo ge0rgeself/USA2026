@@ -24,9 +24,11 @@ NYC trip planner for January 14-18, 2025. Features:
 | `lib/oscar-agent.js` | Oscar chatbot - Gemini with agentic function calling |
 | `lib/parser.js` | Parses itinerary.txt into structured JSON |
 | `lib/enricher.js` | Enriches places with Gemini Maps grounding |
+| `lib/place-service.js` | Gemini enrichment pipeline with Maps grounding |
 | `preferences.md` | Traveler preferences (dietary, budget, pace, etc.) |
 | `itinerary.txt` | Source of truth for trip itinerary (editable) |
 | `itinerary.json` | Parsed + enriched itinerary (auto-generated) |
+| `tools/check_enrichment.js` | Audit utility to check enrichment coverage |
 | `Dockerfile` | Container config for Cloud Run |
 | `.github/workflows/deploy.yml` | CI/CD - auto-deploys on push to main |
 
@@ -164,11 +166,34 @@ Converts `itinerary.txt` → structured JSON:
 
 Enhances parsed data with real place info via Gemini:
 - Uses Google Maps grounding for accurate addresses
-- Adds: address, neighborhood, hours, price, tips, website
+- Adds: address, neighborhood, hours, price, tip, website
 - Supports walking routes with waypoints
 - Falls back gracefully if Gemini API unavailable
 
 **Data flow:** `itinerary.txt` → parser → enricher → `itinerary.json` → Calendar UI
+
+### Data Structure
+
+Each item in the itinerary has three main fields:
+
+- **`description`** - Original text from itinerary.txt (preserved for reference)
+- **`prompt`** - User input text used for enrichment (defaults to description)
+- **`enrichment`** - Gemini-generated data with:
+  - `name` - Place name
+  - `hook` - Short descriptive tagline (1-2 sentences)
+  - `tip` - Insider tip or recommendation (singular, not "tips")
+  - `vibe` - Atmosphere description
+  - `hours` - Operating hours
+  - `price` - Price level (e.g., "$$")
+  - `address` - Full street address
+  - `neighborhood` - Area/district
+  - `mapsUrl` - Google Maps link
+  - `website` - Official website
+  - `walkingMins` - Walking time (for routes)
+
+**Migration:** On data load, items with `description` but no `prompt` are automatically migrated to use `description` as `prompt`.
+
+**Display logic:** Activities without detailed place data still show the `hook` field for context.
 
 ## Google Cloud Resources
 
@@ -194,3 +219,45 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`):
 - Text: `#1a1a1a` (black)
 - Accent: `#c9463d` (coral) for active states
 - Typography: Playfair Display (serif headings), DM Sans (body)
+
+## Development Tools
+
+### Check Enrichment Coverage
+
+Use `tools/check_enrichment.js` to audit which items lack enrichment data:
+
+```bash
+node tools/check_enrichment.js
+```
+
+Shows items without enrichment, helping identify gaps in the enrichment pipeline.
+
+## Troubleshooting
+
+### Enrichment not showing
+- **Check Gemini API key:** Verify `google-gemini-api-key` secret is set in Cloud Run
+- **Check field names:** Use singular `tip` (not `tips`) in enrichment object
+- **Activities:** Should show `hook` text even without full place data
+- **Context:** Enrichment receives only item type (e.g., "(activity)"), not full day context
+
+### OAuth failing locally
+- **Expected behavior:** OAuth won't work at `localhost:8080` due to callback URL mismatch
+- **Workaround:** Test authentication only on production Cloud Run deployment
+- **Alternative:** Use Cloud Run local emulator with proper callback configuration
+
+### Parser errors
+- **Time formats:** Use `7:30pm`, `4-6pm`, or keywords like `morning`
+- **Item modifiers:** Prefix with `fallback:` or suffix with `(optional)`
+- **Headers:** Days must start with `# Jan 14 (Tue) - Title` format
+- **Reference:** See "Itinerary Format" section above for complete syntax
+
+### Session issues
+- **Session secret:** Currently hardcoded as `'your-secret-key'` in server.js
+- **Cookie duration:** 7 days (configured in passport session)
+- **Clear session:** Use `/logout` endpoint or clear browser cookies
+
+### Deployment issues
+- **Check GitHub Actions:** Run `gh run list` to see deployment status
+- **View logs:** `gcloud run services logs read nyc-trip --region us-central1`
+- **Manual deploy:** `gcloud run deploy nyc-trip --source . --region us-central1`
+- **Secrets:** Ensure all 4 secrets are configured in Secret Manager
