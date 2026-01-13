@@ -850,7 +850,7 @@ app.put('/api/itinerary', requireAuth, async (req, res) => {
 
     // Background enrich (non-blocking)
     if (needsEnrichment) {
-      runBackgroundEnrichment().catch(err =>
+      runBackgroundEnrichment(userId).catch(err =>
         console.error('Background enrichment error:', err)
       );
     }
@@ -901,6 +901,7 @@ app.post('/api/interpret', requireAuth, async (req, res) => {
 app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
   try {
     const { day, index, item } = req.body;
+    const userId = req.user.id;
 
     if (typeof day !== 'number' || typeof index !== 'number' || !item) {
       return res.status(400).json({ error: 'Missing day, index, or item' });
@@ -957,7 +958,7 @@ app.patch('/api/itinerary/item', requireAuth, async (req, res) => {
 
     // Background enrich if prompt changed
     if (promptChanged) {
-      runBackgroundEnrichment().catch(err =>
+      runBackgroundEnrichment(userId).catch(err =>
         console.error('Background enrichment error:', err)
       );
     }
@@ -1040,7 +1041,7 @@ app.post('/api/itinerary/item', requireAuth, async (req, res) => {
     });
 
     // Background enrich the new item
-    runBackgroundEnrichment().catch(err =>
+    runBackgroundEnrichment(userId).catch(err =>
       console.error('Background enrichment error:', err)
     );
   } catch (err) {
@@ -1299,7 +1300,7 @@ Make the minimal change needed. Do not add explanations.`;
 
     // Trigger background enrichment for new items
     if (needsEnrichment) {
-      runBackgroundEnrichment().catch(err =>
+      runBackgroundEnrichment(userId).catch(err =>
         console.error('Background enrichment error:', err)
       );
     }
