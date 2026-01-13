@@ -19,6 +19,8 @@ jobs:
           service: nyc-trip
           region: us-central1
           source: .
+          flags: |
+            --add-cloudsql-instances=glexpenses-c46fb:us-central1:nyc-planner-db
           env_vars: |
             USE_GCS=true
           secrets: |
@@ -27,3 +29,4 @@ jobs:
             GOOGLE_CLIENT_SECRET=google-client-secret:latest
             GOOGLE_GEMINI_API_KEY=google-gemini-api-key:latest
             SESSION_SECRET=session-secret:latest
+            DATABASE_URL=database-url:latest
