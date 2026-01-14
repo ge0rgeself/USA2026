@@ -1964,6 +1964,388 @@
             margin-bottom: 8px;
             color: var(--text-primary);
         }
+
+        /* ========== EXPENSES VIEW ========== */
+        #view-expenses {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        #view-expenses.active {
+            display: flex;
+        }
+
+        .expenses-container {
+            flex: 1;
+            padding: var(--nav-height) 16px 100px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .expenses-container {
+                padding-top: 16px;
+                padding-bottom: calc(var(--nav-height-mobile) + 100px);
+            }
+        }
+
+        .expenses-header {
+            text-align: center;
+            padding: 24px 0;
+            margin-bottom: 16px;
+        }
+
+        .expenses-header h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 28px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .expenses-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .expenses-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--timeline-line);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .summary-card-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .summary-card-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .summary-card-value.george {
+            color: var(--coral);
+        }
+
+        .summary-card-value.val {
+            color: var(--teal);
+        }
+
+        .expense-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .expense-item {
+            background: var(--bg-card);
+            border: 1px solid var(--timeline-line);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .expense-item:hover {
+            border-color: var(--accent-dim);
+        }
+
+        .expense-payer {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .expense-payer.george {
+            background: var(--coral);
+        }
+
+        .expense-payer.val {
+            background: var(--teal);
+        }
+
+        .expense-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .expense-description {
+            font-size: 15px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .expense-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .expense-amount {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .expense-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .expense-item:hover .expense-actions {
+            opacity: 1;
+        }
+
+        .expense-action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .expense-action-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .expense-action-btn.delete:hover {
+            background: #dc2626;
+        }
+
+        .expense-action-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Add Expense Form */
+        .add-expense-card {
+            background: var(--bg-card);
+            border: 2px dashed var(--timeline-line);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        .add-expense-card.active {
+            border-style: solid;
+            border-color: var(--accent);
+        }
+
+        .add-expense-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .add-expense-trigger:hover {
+            color: var(--text-primary);
+        }
+
+        .add-expense-trigger svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .add-expense-form {
+            display: none;
+        }
+
+        .add-expense-card.active .add-expense-trigger {
+            display: none;
+        }
+
+        .add-expense-card.active .add-expense-form {
+            display: block;
+        }
+
+        .expense-form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .expense-form-group {
+            flex: 1;
+        }
+
+        .expense-form-group.small {
+            flex: 0 0 100px;
+        }
+
+        .expense-form-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .expense-form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--timeline-line);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--bg-main);
+            transition: border-color 0.2s ease;
+        }
+
+        .expense-form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .expense-form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--timeline-line);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--bg-main);
+            cursor: pointer;
+        }
+
+        .expense-form-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        .expense-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .expense-btn-secondary {
+            background: transparent;
+            border: 1px solid var(--timeline-line);
+            color: var(--text-secondary);
+        }
+
+        .expense-btn-secondary:hover {
+            border-color: var(--accent-dim);
+            color: var(--text-primary);
+        }
+
+        .expense-btn-primary {
+            background: var(--accent);
+            border: none;
+            color: white;
+        }
+
+        .expense-btn-primary:hover {
+            background: var(--accent-light);
+        }
+
+        .expense-empty {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-secondary);
+        }
+
+        .expense-empty svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Edit mode */
+        .expense-item.editing {
+            border-color: var(--accent);
+        }
+
+        .expense-item.editing .expense-view {
+            display: none;
+        }
+
+        .expense-item .expense-edit-form {
+            display: none;
+            width: 100%;
+        }
+
+        .expense-item.editing .expense-edit-form {
+            display: block;
+        }
+
+        .expense-edit-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .expense-edit-input {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid var(--timeline-line);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .expense-edit-input.amount {
+            width: 80px;
+            flex: 0 0 80px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .expense-edit-select {
+            padding: 8px 10px;
+            border: 1px solid var(--timeline-line);
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -1985,6 +2367,13 @@
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
                 <span>Chat</span>
+            </a>
+            <a href="#expenses" class="nav-link" data-view="expenses">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <span>Expenses</span>
             </a>
         </div>
         <a href="/logout" class="logout-btn">Sign Out</a>
@@ -2063,11 +2452,85 @@
         </div>
     </div>
 
+    <!-- ========== EXPENSES VIEW ========== -->
+    <div id="view-expenses" class="view">
+        <div class="expenses-container">
+            <div class="expenses-header">
+                <h1>Trip Expenses</h1>
+                <p>Track shared costs for NYC Jan 14-18</p>
+            </div>
+
+            <div class="expenses-summary">
+                <div class="summary-card">
+                    <div class="summary-card-label">Total</div>
+                    <div id="expense-total" class="summary-card-value">$0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-card-label">George Paid</div>
+                    <div id="expense-george" class="summary-card-value george">$0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-card-label">Val Paid</div>
+                    <div id="expense-val" class="summary-card-value val">$0</div>
+                </div>
+            </div>
+
+            <div id="expense-list" class="expense-list">
+                <!-- Expense items will be rendered here -->
+            </div>
+
+            <div id="add-expense-card" class="add-expense-card">
+                <div class="add-expense-trigger">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Expense
+                </div>
+                <div class="add-expense-form">
+                    <div class="expense-form-row">
+                        <div class="expense-form-group">
+                            <label class="expense-form-label">Description</label>
+                            <input type="text" id="expense-desc" class="expense-form-input" placeholder="What was it for?">
+                        </div>
+                    </div>
+                    <div class="expense-form-row">
+                        <div class="expense-form-group small">
+                            <label class="expense-form-label">Amount</label>
+                            <input type="number" id="expense-amount" class="expense-form-input" placeholder="0.00" step="0.01" min="0">
+                        </div>
+                        <div class="expense-form-group">
+                            <label class="expense-form-label">Who Paid?</label>
+                            <select id="expense-payer" class="expense-form-select">
+                                <option value="george">George</option>
+                                <option value="val">Val</option>
+                            </select>
+                        </div>
+                        <div class="expense-form-group">
+                            <label class="expense-form-label">Category</label>
+                            <select id="expense-category" class="expense-form-select">
+                                <option value="food">Food</option>
+                                <option value="transport">Transport</option>
+                                <option value="activity">Activity</option>
+                                <option value="accommodation">Accommodation</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="expense-form-actions">
+                        <button type="button" id="expense-cancel" class="expense-btn expense-btn-secondary">Cancel</button>
+                        <button type="button" id="expense-save" class="expense-btn expense-btn-primary">Add Expense</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
     // ========== ROUTER ==========
     class Router {
         constructor() {
-            this.views = ['calendar', 'chat'];
+            this.views = ['calendar', 'chat', 'expenses'];
             this.currentView = 'calendar';
             this.init();
         }
@@ -3580,11 +4043,277 @@
         }
     }
 
+    // ========== EXPENSE MANAGER (POC - In-Memory) ==========
+    class ExpenseManager {
+        constructor() {
+            this.expenses = [];
+            this.nextId = 1;
+            this.editingId = null;
+
+            // DOM elements
+            this.listEl = document.getElementById('expense-list');
+            this.totalEl = document.getElementById('expense-total');
+            this.georgeEl = document.getElementById('expense-george');
+            this.valEl = document.getElementById('expense-val');
+            this.addCard = document.getElementById('add-expense-card');
+            this.descInput = document.getElementById('expense-desc');
+            this.amountInput = document.getElementById('expense-amount');
+            this.payerSelect = document.getElementById('expense-payer');
+            this.categorySelect = document.getElementById('expense-category');
+
+            this.init();
+        }
+
+        init() {
+            // Add expense form handlers
+            document.getElementById('add-expense-card').querySelector('.add-expense-trigger').addEventListener('click', () => {
+                this.showAddForm();
+            });
+
+            document.getElementById('expense-cancel').addEventListener('click', () => {
+                this.hideAddForm();
+            });
+
+            document.getElementById('expense-save').addEventListener('click', () => {
+                this.saveExpense();
+            });
+
+            // Enter key to submit
+            this.descInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.saveExpense();
+                if (e.key === 'Escape') this.hideAddForm();
+            });
+
+            this.amountInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.saveExpense();
+                if (e.key === 'Escape') this.hideAddForm();
+            });
+
+            // Load sample data for demo
+            this.loadSampleData();
+            this.render();
+        }
+
+        loadSampleData() {
+            // Add a few sample expenses for the POC demo
+            this.expenses = [
+                { id: 1, description: 'Taxi from JFK', amount: 65, payer: 'george', category: 'transport', date: new Date('2026-01-14') },
+                { id: 2, description: 'Dinner at Carbone', amount: 180, payer: 'val', category: 'food', date: new Date('2026-01-14') },
+                { id: 3, description: 'MoMA tickets', amount: 50, payer: 'george', category: 'activity', date: new Date('2026-01-15') }
+            ];
+            this.nextId = 4;
+        }
+
+        showAddForm() {
+            this.addCard.classList.add('active');
+            this.descInput.focus();
+        }
+
+        hideAddForm() {
+            this.addCard.classList.remove('active');
+            this.clearForm();
+        }
+
+        clearForm() {
+            this.descInput.value = '';
+            this.amountInput.value = '';
+            this.payerSelect.value = 'george';
+            this.categorySelect.value = 'food';
+        }
+
+        saveExpense() {
+            const description = this.descInput.value.trim();
+            const amount = parseFloat(this.amountInput.value);
+            const payer = this.payerSelect.value;
+            const category = this.categorySelect.value;
+
+            if (!description || isNaN(amount) || amount <= 0) {
+                showToast('Please enter a description and valid amount', 'error');
+                return;
+            }
+
+            const expense = {
+                id: this.nextId++,
+                description,
+                amount,
+                payer,
+                category,
+                date: new Date()
+            };
+
+            this.expenses.push(expense);
+            this.hideAddForm();
+            this.render();
+            showToast(`Added: ${description}`);
+        }
+
+        editExpense(id) {
+            this.editingId = id;
+            this.render();
+        }
+
+        saveEdit(id) {
+            const expense = this.expenses.find(e => e.id === id);
+            if (!expense) return;
+
+            const row = this.listEl.querySelector(`[data-id="${id}"]`);
+            const desc = row.querySelector('.expense-edit-input:not(.amount)').value.trim();
+            const amount = parseFloat(row.querySelector('.expense-edit-input.amount').value);
+            const payer = row.querySelector('.expense-edit-select').value;
+
+            if (!desc || isNaN(amount) || amount <= 0) {
+                showToast('Invalid input', 'error');
+                return;
+            }
+
+            expense.description = desc;
+            expense.amount = amount;
+            expense.payer = payer;
+
+            this.editingId = null;
+            this.render();
+            showToast('Expense updated');
+        }
+
+        cancelEdit() {
+            this.editingId = null;
+            this.render();
+        }
+
+        deleteExpense(id) {
+            const expense = this.expenses.find(e => e.id === id);
+            if (!expense) return;
+
+            this.expenses = this.expenses.filter(e => e.id !== id);
+            this.render();
+            showToast(`Deleted: ${expense.description}`);
+        }
+
+        calculateTotals() {
+            const total = this.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const georgePaid = this.expenses.filter(e => e.payer === 'george').reduce((sum, e) => sum + e.amount, 0);
+            const valPaid = this.expenses.filter(e => e.payer === 'val').reduce((sum, e) => sum + e.amount, 0);
+            return { total, georgePaid, valPaid };
+        }
+
+        formatCurrency(amount) {
+            return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        }
+
+        formatDate(date) {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        getCategoryIcon(category) {
+            const icons = {
+                food: '🍽️',
+                transport: '🚕',
+                activity: '🎭',
+                accommodation: '🏨',
+                other: '📦'
+            };
+            return icons[category] || '📦';
+        }
+
+        render() {
+            // Update summary
+            const { total, georgePaid, valPaid } = this.calculateTotals();
+            this.totalEl.textContent = this.formatCurrency(total);
+            this.georgeEl.textContent = this.formatCurrency(georgePaid);
+            this.valEl.textContent = this.formatCurrency(valPaid);
+
+            // Render expense list
+            if (this.expenses.length === 0) {
+                this.listEl.innerHTML = `
+                    <div class="expense-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        <p>No expenses yet. Add your first one!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = this.expenses
+                .sort((a, b) => b.date - a.date)
+                .map(expense => {
+                    const isEditing = this.editingId === expense.id;
+
+                    if (isEditing) {
+                        return `
+                            <div class="expense-item editing" data-id="${expense.id}">
+                                <div class="expense-edit-form">
+                                    <div class="expense-edit-row">
+                                        <input type="text" class="expense-edit-input" value="${this.escapeHtml(expense.description)}">
+                                        <input type="number" class="expense-edit-input amount" value="${expense.amount}" step="0.01">
+                                        <select class="expense-edit-select">
+                                            <option value="george" ${expense.payer === 'george' ? 'selected' : ''}>George</option>
+                                            <option value="val" ${expense.payer === 'val' ? 'selected' : ''}>Val</option>
+                                        </select>
+                                        <button class="expense-action-btn save-edit" onclick="window.expenseManager.saveEdit(${expense.id})">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                        </button>
+                                        <button class="expense-action-btn cancel-edit" onclick="window.expenseManager.cancelEdit()">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="expense-item" data-id="${expense.id}">
+                            <div class="expense-view" style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                                <div class="expense-payer ${expense.payer}">
+                                    ${expense.payer === 'george' ? 'G' : 'V'}
+                                </div>
+                                <div class="expense-details">
+                                    <div class="expense-description">${this.getCategoryIcon(expense.category)} ${this.escapeHtml(expense.description)}</div>
+                                    <div class="expense-meta">${this.formatDate(expense.date)} · ${expense.category}</div>
+                                </div>
+                                <div class="expense-amount">${this.formatCurrency(expense.amount)}</div>
+                                <div class="expense-actions">
+                                    <button class="expense-action-btn edit" onclick="window.expenseManager.editExpense(${expense.id})">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </button>
+                                    <button class="expense-action-btn delete" onclick="window.expenseManager.deleteExpense(${expense.id})">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            this.listEl.innerHTML = html;
+        }
+
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    }
+
     // ========== INIT ==========
     document.addEventListener('DOMContentLoaded', () => {
         window.router = new Router();
         window.chatAgent = new ChatAgent();
         window.calendarRenderer = new CalendarRenderer();
+        window.expenseManager = new ExpenseManager();
 
         // Load calendar data
         window.calendarRenderer.load();
