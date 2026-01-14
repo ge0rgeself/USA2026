@@ -1372,6 +1372,114 @@ Make the minimal change needed. Do not add explanations.`;
   }
 });
 
+// ============================================================================
+// EXPENSE API ENDPOINTS
+// ============================================================================
+
+// GET all expenses for the authenticated user
+app.get('/api/expenses', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const expenses = await db.getExpensesByUser(userId);
+    const totals = await db.getExpenseTotals(userId);
+    res.json({ expenses, totals });
+  } catch (err) {
+    console.error('Get expenses error:', err);
+    res.status(500).json({ error: 'Failed to load expenses' });
+  }
+});
+
+// POST create a new expense
+app.post('/api/expenses', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { description, amount, payer, category, date } = req.body;
+
+    if (!description || typeof description !== 'string' || description.trim().length === 0) {
+      return res.status(400).json({ error: 'Description is required' });
+    }
+
+    if (typeof amount !== 'number' || amount <= 0) {
+      return res.status(400).json({ error: 'Amount must be a positive number' });
+    }
+
+    if (!payer || !['george', 'val'].includes(payer)) {
+      return res.status(400).json({ error: 'Payer must be george or val' });
+    }
+
+    const expense = await db.createExpense(userId, {
+      description: description.trim(),
+      amount,
+      payer,
+      category: category || 'other',
+      date: date || new Date().toISOString().split('T')[0]
+    });
+
+    res.json({ success: true, expense });
+  } catch (err) {
+    console.error('Create expense error:', err);
+    res.status(500).json({ error: 'Failed to create expense' });
+  }
+});
+
+// PATCH update an expense
+app.patch('/api/expenses/:id', requireAuth, async (req, res) => {
+  try {
+    const expenseId = req.params.id;
+    const userId = req.user.id;
+    const updates = req.body;
+
+    // Verify the expense belongs to this user
+    const existing = await db.getExpenseById(expenseId);
+    if (!existing) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+    if (existing.userId !== userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Validate updates
+    if ('description' in updates && (typeof updates.description !== 'string' || updates.description.trim().length === 0)) {
+      return res.status(400).json({ error: 'Description cannot be empty' });
+    }
+    if ('amount' in updates && (typeof updates.amount !== 'number' || updates.amount <= 0)) {
+      return res.status(400).json({ error: 'Amount must be a positive number' });
+    }
+    if ('payer' in updates && !['george', 'val'].includes(updates.payer)) {
+      return res.status(400).json({ error: 'Payer must be george or val' });
+    }
+
+    const expense = await db.updateExpense(expenseId, updates);
+    res.json({ success: true, expense });
+  } catch (err) {
+    console.error('Update expense error:', err);
+    res.status(500).json({ error: 'Failed to update expense' });
+  }
+});
+
+// DELETE an expense
+app.delete('/api/expenses/:id', requireAuth, async (req, res) => {
+  try {
+    const expenseId = req.params.id;
+    const userId = req.user.id;
+
+    // Verify the expense belongs to this user
+    const existing = await db.getExpenseById(expenseId);
+    if (!existing) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+    if (existing.userId !== userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    await db.deleteExpense(expenseId);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete expense error:', err);
+    res.status(500).json({ error: 'Failed to delete expense' });
+  }
+});
+
 const PORT = process.env.PORT || 8080;
 const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
