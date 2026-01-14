@@ -51,8 +51,8 @@ function formatTime(hour, minute, period) {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
-// Parse date string "Jan 14" -> "2025-01-14"
-function parseDate(dateStr, year = 2025) {
+// Parse date string "Jan 14" -> "2026-01-14"
+function parseDate(dateStr, year = 2026) {
   const monthMap = {
     'jan': 1, 'january': 1,
     'feb': 2, 'february': 2,
@@ -170,10 +170,10 @@ async function migrateData() {
       `INSERT INTO trips (name, start_date, end_date, user_id)
        VALUES ($1, $2, $3, $4)
        RETURNING id`,
-      ['NYC January 2025', '2025-01-14', '2025-01-18', userIds.george]
+      ['NYC January 2026', '2026-01-14', '2026-01-18', userIds.george]
     );
     const tripId = tripResult.rows[0].id;
-    console.log(`  - Created trip "NYC January 2025" (${tripResult.rows[0].id})`);
+    console.log(`  - Created trip "NYC January 2026" (${tripResult.rows[0].id})`);
 
     // 3. Create accommodation
     if (itineraryData.hotel && itineraryData.hotel.enrichment) {
@@ -188,8 +188,8 @@ async function migrateData() {
           hotel.name || 'Untitled at 3 Freeman Alley',
           hotel.address,
           hotel.neighborhood,
-          '2025-01-14',
-          '2025-01-18',
+          '2026-01-14',
+          '2026-01-18',
           JSON.stringify(hotel),
         ]
       );
@@ -263,7 +263,7 @@ async function migrateData() {
     console.log('\n✅ Migration completed successfully!');
     console.log(`\nSummary:`);
     console.log(`  - Users: 2 (George, Valmikh)`);
-    console.log(`  - Trip: 1 (NYC January 2025)`);
+    console.log(`  - Trip: 1 (NYC January 2026)`);
     console.log(`  - Accommodation: 1`);
     console.log(`  - Days: ${itineraryData.days.length}`);
     console.log(`  - Items: ${itemCount + (itineraryData.reservations?.length || 0)}`);

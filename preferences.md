@@ -35,5 +35,5 @@
 
 ## Trip Logistics
 - Hotel: Untitled 3 at Freeman Alley (Lower East Side)
-- Dates: January 14-18, 2025
+- Dates: January 14-18, 2026
 - Weather: January in NYC - check forecast daily, dress in layers

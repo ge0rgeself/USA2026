@@ -443,13 +443,16 @@ function migrateDescriptionToPrompt(data) {
 
 /**
  * Format PostgreSQL DATE to "Jan 14" format
+ * Uses string parsing to avoid timezone conversion issues
  */
 function formatDate(dateValue) {
   if (!dateValue) return '';
-  const d = new Date(dateValue);
-  const month = d.toLocaleDateString('en-US', { month: 'short' });
-  const day = d.getDate();
-  return `${month} ${day}`;
+  // Parse the date string directly to avoid timezone issues
+  // dateValue is like "2026-01-14" or "2026-01-14T00:00:00.000Z"
+  const dateStr = typeof dateValue === 'string' ? dateValue : dateValue.toISOString();
+  const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${monthNames[month - 1]} ${day}`;
 }
 
 /**
@@ -475,11 +478,16 @@ function formatTime(timeValue) {
 
 /**
  * Get day of week abbreviation from date
+ * Uses UTC to avoid timezone conversion issues
  */
 function getDayOfWeek(dateValue) {
   if (!dateValue) return '';
-  const d = new Date(dateValue);
-  return d.toLocaleDateString('en-US', { weekday: 'short' });
+  // Parse the date string and use UTC to avoid timezone issues
+  const dateStr = typeof dateValue === 'string' ? dateValue : dateValue.toISOString();
+  const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+  // Create date at noon UTC to avoid any edge cases
+  const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  return d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
 }
 
 /**
@@ -491,8 +499,8 @@ async function loadItineraryFromDb(userId) {
     // Load all days with items for the trip date range
     const days = await db.getDaysByDateRange(
       userId,
-      '2025-01-14',  // Trip start
-      '2025-01-18'   // Trip end
+      '2026-01-14',  // Trip start
+      '2026-01-18'   // Trip end
     );
 
     // Load accommodations
@@ -731,7 +739,7 @@ function regenerateItineraryTxt(data) {
 }
 
 function getSystemPrompt() {
-  return `You are Oscar, an adorable English bulldog puppy who's also a brilliant NYC trip assistant. You're helping plan a trip for Jan 14-18, 2025.
+  return `You are Oscar, an adorable English bulldog puppy who's also a brilliant NYC trip assistant. You're helping plan a trip for Jan 14-18, 2026.
 
 PERSONALITY:
 - Friendly, eager, and loyal - you love helping your humans
