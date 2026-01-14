@@ -2915,12 +2915,35 @@
             this.pillsContainer = document.getElementById('day-pills');
             this.currentDayEl = document.getElementById('cal-current-day');
             this.data = null;
-            this.selectedDay = 1;
+            this.selectedDay = this.getDayFromHash() || 1;
             this.expandedEvent = null;
             this.editingEvent = null;
             this.editState = null;
             this.pollingInterval = null;
             this.initPillHandlers();
+            this.initHashHandler();
+        }
+
+        getDayFromHash() {
+            const hash = window.location.hash;
+            const match = hash.match(/^#day=(\d+)$/);
+            return match ? parseInt(match[1], 10) : null;
+        }
+
+        updateHash(day) {
+            const newHash = `#day=${day}`;
+            if (window.location.hash !== newHash) {
+                history.replaceState(null, '', newHash);
+            }
+        }
+
+        initHashHandler() {
+            window.addEventListener('hashchange', () => {
+                const day = this.getDayFromHash();
+                if (day && day !== this.selectedDay && this.data?.days?.[day - 1]) {
+                    this.selectDay(day);
+                }
+            });
         }
 
         initPillHandlers() {
@@ -2963,6 +2986,14 @@
                 // Handle both old format {txt, json} and new format (direct JSON)
                 this.data = result.json || result;
 
+                // Validate that selectedDay exists in data, reset to 1 if not
+                if (!this.data?.days?.[this.selectedDay - 1]) {
+                    this.selectedDay = 1;
+                }
+
+                // Update hash to reflect current day
+                this.updateHash(this.selectedDay);
+
                 // Render day pills from data
                 this.renderDayPills();
                 this.render();
@@ -2989,6 +3020,7 @@
             setTimeout(() => {
                 this.selectedDay = day;
                 this.expandedEvent = null;
+                this.updateHash(day);
                 this.render();
                 this.container.classList.remove('transitioning');
             }, 150);
