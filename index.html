@@ -2915,7 +2915,7 @@
             this.pillsContainer = document.getElementById('day-pills');
             this.currentDayEl = document.getElementById('cal-current-day');
             this.data = null;
-            this.selectedDay = 1;
+            this.selectedDay = parseInt(localStorage.getItem('selectedDay')) || 1;
             this.expandedEvent = null;
             this.editingEvent = null;
             this.editState = null;
@@ -2963,6 +2963,13 @@
                 // Handle both old format {txt, json} and new format (direct JSON)
                 this.data = result.json || result;
 
+                // Validate stored selectedDay is within bounds
+                const totalDays = this.data.days?.length || 0;
+                if (this.selectedDay < 1 || this.selectedDay > totalDays) {
+                    this.selectedDay = 1;
+                    localStorage.setItem('selectedDay', 1);
+                }
+
                 // Render day pills from data
                 this.renderDayPills();
                 this.render();
@@ -2988,6 +2995,7 @@
             this.container.classList.add('transitioning');
             setTimeout(() => {
                 this.selectedDay = day;
+                localStorage.setItem('selectedDay', day);
                 this.expandedEvent = null;
                 this.render();
                 this.container.classList.remove('transitioning');
