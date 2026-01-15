@@ -2498,16 +2498,6 @@
                                 <option value="val">Val</option>
                             </select>
                         </div>
-                        <div class="expense-form-group">
-                            <label class="expense-form-label">Category</label>
-                            <select id="expense-category" class="expense-form-select">
-                                <option value="food">Food</option>
-                                <option value="transport">Transport</option>
-                                <option value="activity">Activity</option>
-                                <option value="accommodation">Accommodation</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
                     </div>
                     <div class="expense-form-actions">
                         <button type="button" id="expense-cancel" class="expense-btn expense-btn-secondary">Cancel</button>
@@ -4051,6 +4041,7 @@
             this.totals = { total: 0, georgePaid: 0, valPaid: 0 };
             this.editingId = null;
             this.loading = false;
+            this.saving = false;
 
             // DOM elements
             this.listEl = document.getElementById('expense-list');
@@ -4061,7 +4052,6 @@
             this.descInput = document.getElementById('expense-desc');
             this.amountInput = document.getElementById('expense-amount');
             this.payerSelect = document.getElementById('expense-payer');
-            this.categorySelect = document.getElementById('expense-category');
 
             this.init();
         }
@@ -4134,25 +4124,30 @@
             this.descInput.value = '';
             this.amountInput.value = '';
             this.payerSelect.value = 'george';
-            this.categorySelect.value = 'food';
         }
 
         async saveExpense() {
+            if (this.saving) return;
+
             const description = this.descInput.value.trim();
             const amount = parseFloat(this.amountInput.value);
             const payer = this.payerSelect.value;
-            const category = this.categorySelect.value;
 
             if (!description || isNaN(amount) || amount <= 0) {
                 showToast('Please enter a description and valid amount', 'error');
                 return;
             }
 
+            this.saving = true;
+            const saveBtn = document.getElementById('expense-save');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
             try {
                 const res = await fetch('/api/expenses', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ description, amount, payer, category })
+                    body: JSON.stringify({ description, amount, payer })
                 });
 
                 if (!res.ok) {
@@ -4166,6 +4161,10 @@
             } catch (err) {
                 console.error('Save expense error:', err);
                 showToast(err.message || 'Failed to save expense', 'error');
+            } finally {
+                this.saving = false;
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Add Expense';
             }
         }
 
@@ -4246,17 +4245,6 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
-        getCategoryIcon(category) {
-            const icons = {
-                food: '🍽️',
-                transport: '🚕',
-                activity: '🎭',
-                accommodation: '🏨',
-                other: '📦'
-            };
-            return icons[category] || '📦';
-        }
-
         render() {
             // Update summary
             const { total, georgePaid, valPaid } = this.calculateTotals();
@@ -4331,8 +4319,8 @@
                                     ${expense.payer === 'george' ? 'G' : 'V'}
                                 </div>
                                 <div class="expense-details">
-                                    <div class="expense-description">${this.getCategoryIcon(expense.category)} ${this.escapeHtml(expense.description)}</div>
-                                    <div class="expense-meta">${this.formatDate(expense.date)} · ${expense.category}</div>
+                                    <div class="expense-description">${this.escapeHtml(expense.description)}</div>
+                                    <div class="expense-meta">${this.formatDate(expense.date)}</div>
                                 </div>
                                 <div class="expense-amount">${this.formatCurrency(expense.amount)}</div>
                                 <div class="expense-actions">
