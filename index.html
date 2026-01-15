@@ -687,16 +687,9 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding-top: var(--nav-height);
             overflow: hidden;
             background: linear-gradient(180deg, #faf8f5 0%, var(--bg-main) 100%);
-        }
-
-        @media (max-width: 768px) {
-            .chat-container {
-                padding-top: 0;
-                padding-bottom: var(--nav-height-mobile);
-            }
+            /* padding handled by parent #view-chat.view */
         }
 
         /* Oscar Header - Editorial Style */
@@ -1222,7 +1215,6 @@
             display: flex;
             gap: 14px;
             padding: 24px 28px;
-            padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
             background: var(--bg-card);
             border-top: 1px solid var(--timeline-line);
             flex-shrink: 0;
@@ -1450,7 +1442,7 @@
 
             .chat-input-area-full {
                 padding: 16px;
-                padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+                /* safe-area-inset handled by nav, not needed here */
             }
 
             .chat-input-full {
