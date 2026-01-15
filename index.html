@@ -3182,16 +3182,17 @@
 
         renderHotelCard() {
             const hotel = this.data.hotel;
-            // Parse hotel string: "Untitled at 3 Freeman Alley, Lower East Side"
-            const hotelName = typeof hotel === 'string' ? hotel : hotel.name;
-            const address = '3 Freeman Alley, New York, NY';
+            // Handle both string and enriched object formats (new format uses .description)
+            const hotelName = typeof hotel === 'string' ? hotel : (hotel.description || hotel.enrichment?.name || hotel.name);
+            const address = hotel.enrichment?.address || '3 Freeman Alley, New York, NY';
+            const neighborhood = hotel.enrichment?.neighborhood || 'LES';
             const mapsUrl = `https://maps.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}&travelmode=walking`;
 
             return `
             <div class="hotel-card">
                 <span class="hotel-card-dot"></span>
                 <span class="hotel-card-name">${this.escapeHtml(hotelName)}</span>
-                <span class="hotel-card-neighborhood">LES</span>
+                <span class="hotel-card-neighborhood">${this.escapeHtml(neighborhood)}</span>
                 <a class="hotel-card-link" href="${mapsUrl}" target="_blank">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
